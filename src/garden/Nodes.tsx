@@ -39,7 +39,8 @@ export function Nodes({ grove, view, onOpen }: Props) {
               if (element) anchors.current.set(node.id, element)
               else anchors.current.delete(node.id)
             }}
-            className="absolute left-0 top-0 transition-[opacity,visibility] duration-150 ease-out data-hidden:invisible data-hidden:opacity-0"
+            // Links sit above everything else on the plant.
+            className={`absolute left-0 top-0 transition-[opacity,visibility] duration-150 ease-out data-hidden:invisible data-hidden:opacity-0 ${node.data?.kind === 'link' ? 'z-10' : ''}`}
             data-hidden={visible ? undefined : ''}
             inert={!visible}
           >
@@ -64,16 +65,17 @@ const NOTE = 'halo whitespace-nowrap text-[length:calc(var(--spacing)*12.5)] lea
 function Folder({ node, open, here, onToggle }: { node: GroveNode<Entry>; open: boolean; here: boolean; onToggle: () => void }) {
   const glyph: GlyphName = open ? 'openFolder' : 'folder'
   const entry = node.data?.kind === 'folder' ? node.data : undefined
+  const hover = 'group-hover:text-accent group-focus-visible:text-accent'
   return (
     <Item
-        node={node}
-        glyph={glyph}
-        expanded={open}
-        onClick={onToggle}
-        iconClass={open ? 'text-ink' : 'text-muted'}
-        // An open folder's name steps back; its contents are what matter now.
-        labelClass={open && !here ? 'text-muted' : 'text-ink'}
-        name={`${node.name}/`}
+      node={node}
+      glyph={glyph}
+      expanded={open}
+      onClick={onToggle}
+      iconClass={`${open ? 'text-ink' : 'text-muted'} ${hover}`}
+      // An open folder's name steps back; its contents are what matter now.
+      labelClass={`${open && !here ? 'text-muted' : 'text-ink'} ${hover} group-focus-visible:underline`}
+      name={`${node.name}/`}
       note={entry?.note}
     />
   )
@@ -82,14 +84,20 @@ function Folder({ node, open, here, onToggle }: { node: GroveNode<Entry>; open: 
 function File({ node, here, onOpen }: { node: GroveNode<Entry>; here: boolean; onOpen: () => void }) {
   const entry = node.data
   const link = entry?.kind === 'link'
+  const hover = 'group-hover:text-accent group-focus-visible:text-accent'
   return (
     <Item
       node={node}
       glyph={glyphFor(entry)}
       onClick={onOpen}
       current={here}
-      iconClass={here ? 'text-accent' : 'text-faint'}
-      labelClass={here ? 'text-ink' : 'text-body'}
+      iconClass={link ? 'text-accent' : `${here ? 'text-accent' : 'text-faint'} ${hover}`}
+      // Links are somewhere to go, so they stand out in the accent; hovering underlines them.
+      labelClass={
+        link
+          ? 'text-accent group-hover:underline group-focus-visible:underline'
+          : `${here ? 'text-ink' : 'text-body'} ${hover} group-focus-visible:underline`
+      }
       name={`${node.name}${link ? ' ↗' : ''}`}
     />
   )
@@ -147,13 +155,9 @@ function Item({ node, glyph, name, note, iconClass, labelClass, expanded, curren
       className="group pointer-events-auto absolute block cursor-pointer outline-none"
       style={{ left: px(-width / 2), top: px(-height / 2), width: px(width), height: px(height) }}
     >
-      <PixelIcon
-        name={glyph}
-        data-glyph={node.id}
-        className={`block transition-colors duration-150 group-hover:text-accent group-focus-visible:text-accent ${iconClass}`}
-      />
+      <PixelIcon name={glyph} data-glyph={node.id} className={`block transition-colors duration-150 ${iconClass}`} />
       <span className="absolute flex flex-col" style={label}>
-        <span className={`${LABEL} transition-colors duration-150 group-hover:text-accent group-focus-visible:underline ${labelClass}`}>
+        <span className={`${LABEL} decoration-1 underline-offset-3 transition-colors duration-150 ${labelClass}`}>
           {name}
         </span>
         {note && <span className={NOTE}>{note}</span>}
