@@ -1,10 +1,13 @@
 // The file tree drawn as a plant: what grows where, and how it moves.
-// No three.js here; src/scene draws it and src/finder labels it.
-export { documents } from './documents.ts'
-export { createGrove, type Grove } from './grove.ts'
+// No three.js here; src/scene draws it and src/garden labels it.
+export { createGrove, type Bounds, type Grove } from './grove.ts'
 export {
   ROOT_ID,
+  type BranchSpec,
+  type EntrySpec,
+  type FileSpec,
   type FolderSpec,
+  type LabelSide,
   type GroveBranch,
   type GroveNode,
   type Limb,

@@ -1,10 +1,10 @@
-import { StrictMode } from 'react'
+import { StrictMode, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles/index.css'
 import App from './app/App.tsx'
 
+const Overview = import.meta.env.DEV ? lazy(() => import('./dev/Overview.tsx')) : null
+
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+  <StrictMode>{Overview && location.pathname === '/__overview' ? <Overview /> : <App />}</StrictMode>,
 )

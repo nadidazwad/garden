@@ -11,7 +11,8 @@ import {
   type WebGLRenderer,
 } from 'three'
 
-// Sampled from the reference recording.
+// Sampled from the reference recording, with sky-blue blossoms and light amber
+// ageing in place of its autumn and berry colours.
 const PALETTE = [
   '#140d09', // black
   '#3b2620', // bark shadow
@@ -25,13 +26,16 @@ const PALETTE = [
   '#c4f53c', // spring
   '#ecf622', // yellow
   '#eef5a6', // pale
-  '#7c3416', // rust
-  '#d9722a', // orange
-  '#efa13a', // amber
-  '#f4c64e', // gold
-  '#d68a86', // blossom
-  '#b22020', // berry
-  '#5c1616', // maroon
+  '#1c3f6b', // navy
+  '#2e73bf', // deep sky
+  '#4fa3e0', // cornflower
+  '#87ceeb', // sky
+  '#b5e2f7', // pale sky
+  '#996b29', // ochre
+  '#d19a3d', // amber
+  '#edc261', // light amber
+  '#f7db8a', // honey
+  '#faedb3', // cream
 ]
 
 /** Rendering at twice the cell resolution gives each cell 4 samples (×4 MSAA) of coverage. */

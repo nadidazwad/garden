@@ -1,35 +1,41 @@
-/* Design tokens. Type scale, spacing and easing follow finnolivertaylor.com
-   (reference kept outside the repo, in ~/Projects/azwad-reference); the colours
-   are warmed to sit under a krishnachura in Joishtho.
+/* Design tokens. Type, spacing and easing are taken from finnolivertaylor.com
+   (reference kept outside the repo, in ~/Projects/azwad-reference); the page is
+   plain white and the accent is sky blue.
    Tailwind's default palette and type scale are cleared so only these exist:
    text-ink, bg-page, text-copy, font-mondwest, ease-out-expo, ... */
 
 @theme {
+  /* One spacing unit is one design px, as in the reference (`px-24` is 24 px).
+     The garden redefines it as one world px at the current scale. */
+  --spacing: 1px;
+
   --color-*: initial;
   --color-white: #fff;
   --color-black: #000;
-  --color-page: #f3efe8;
-  --color-panel: #f9f6f0;
-  --color-band: #ece7de;
-  --color-ink: #16130f;
+  --color-page: #fff;
+  --color-panel: #f6f6f6;
+  --color-band: #ebebeb;
+  --color-ink: #111214;
   --color-ink-strong: #000;
-  --color-kicker: #6b655d;
-  /* 4.6:1 on the page; the reference's grey was 3.3:1. */
-  --color-body: #6f6a63;
-  --color-muted: #a39c92;
-  --color-faint: #c9c1b5;
-  --color-line: #ddd6ca;
-  --color-rule: #d6cec1;
-  --color-edge: #bcb3a5;
-  --color-well: #e8e2d7;
-  --color-pill: #e2dacd;
-  --color-mist: #fffdf9;
-  /* Placeholder until the krishnachura lands and its blooms set the accent. */
-  --color-accent: #2d68ff;
-  --color-plate: #16130f0f;
-  --color-scrim: #8f877c;
-  --color-ink-veil: #16130fb8;
-  --color-line-dark: #544d45;
+  /* Both 4.5:1 or better on white; the reference's were lighter. */
+  --color-kicker: #767676;
+  --color-body: #757575;
+  --color-muted: #a6a6a6;
+  --color-faint: #c4c4c4;
+  --color-line: #dcdcdc;
+  --color-rule: #d5d5d5;
+  --color-edge: #bababa;
+  --color-well: #e6e6e6;
+  --color-pill: #e1e1e1;
+  --color-mist: #fff;
+  /* Sky blue, darkened along its hue until text in it reads at 4.6:1 on white. */
+  --color-accent: #007bb9;
+  /* The blossoms' sky blue: 1.7:1 on white, so never for text. */
+  --color-sky: #87ceeb;
+  --color-plate: #1112140e;
+  --color-scrim: #8c8c8c;
+  --color-ink-veil: #111214b8;
+  --color-line-dark: #525252;
 
   --font-sans: 'PP Neue Montreal', 'PP Neue Montreal Fallback', ui-sans-serif, system-ui, sans-serif;
   --font-mondwest: 'PP Mondwest', 'PP Mondwest Fallback', ui-serif, serif;
@@ -66,6 +72,16 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-soft: cubic-bezier(0.45, 0.05, 0.12, 1);
+
+  /* A page coming in over the plant: up from 14 px below. */
+  --animate-enter: enter 620ms var(--ease-out-expo) both;
+
+  @keyframes enter {
+    from {
+      translate: 0 14px;
+      opacity: 0;
+    }
+  }
 
   /* A node popping into the plant: swells past full size, then settles. */
   --animate-pop: pop 320ms ease-out both;
@@ -106,4 +122,15 @@
     background-color: var(--color-accent);
     color: var(--color-white);
   }
+}
+
+/* Text sitting on the plant: a page-coloured outline keeps it legible over leaves. */
+@utility halo {
+  text-shadow:
+    -1px -1px 0 var(--color-page),
+    1px -1px 0 var(--color-page),
+    -1px 1px 0 var(--color-page),
+    1px 1px 0 var(--color-page),
+    0 0 4px var(--color-page),
+    0 0 8px var(--color-page);
 }

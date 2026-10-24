@@ -16,12 +16,16 @@ const MARGIN = 60
 const growTime = (distance: number) => Math.min(1.6, 0.6 + distance / 1000)
 const easeOut = (x: number) => 1 - (1 - x) ** 3
 
-export interface Grove {
-  readonly layout: Layout
-  /** Bumps whenever a node shows or hides, a folder icon opens or closes, or panning turns on or off. */
+export interface Grove<T = unknown> {
+  readonly layout: Layout<T>
+  /** Bumps whenever a node shows or hides, a folder icon opens or closes, panning turns on or off, or the location moves. */
   readonly version: number
+  /** The open file, or else the folder opened last; `/` when nothing is. Node ids are paths, so this is one too. */
+  readonly location: string
   /** Centre of the view, in world px. */
   readonly camera: Vec2
+  /** Where the camera sits with nothing open: the trunk coming in from the left, the view on the ground. */
+  readonly home: Vec2
   /** Nodes currently showing. */
   readonly count: number
   /** True once the plant spills past the view; until then it all stays in view and the view stays put. */
@@ -32,7 +36,17 @@ export interface Grove {
   isVisible(nodeId: string): boolean
   /** True while a folder's branch is out, including while it retracts. */
   isOpen(folderId: string): boolean
+  /** Opens a folder (and the folders it's in), or a file; either way it becomes the location. */
+  open(id: string): void
+  /** Closes a folder and everything open inside it, or puts a file down. The location steps back out if it was inside. */
+  close(id: string): void
   toggle(folderId: string): void
+  /**
+   * Shows a path, as a link or the back button asks: opens the folders on the way, closes the
+   * rest, and opens the file if it is one. Folders grow in turn, each once its own folder shows.
+   * An unknown path goes to the nearest folder that exists.
+   */
+  go(path: string): void
   pan(dx: number, dy: number): void
   /** Let go of a drag: the view glides on at this velocity (world px/s) and slows to a stop. */
   fling(vx: number, vy: number): void
@@ -45,19 +59,29 @@ export interface Grove {
   onFrame(listener: () => void): () => void
 }
 
-interface Bounds {
+export interface Bounds {
   minX: number
   maxX: number
   minY: number
   maxY: number
 }
 
-export function createGrove(spec: FolderSpec, { still = false } = {}): Grove {
+interface Options {
+  /** Skip easing: growth and pans land at once. */
+  still?: boolean
+  /**
+   * World y of the ground the plant stands on. The opening view rests its
+   * bottom edge on it, and the view never sinks below it.
+   */
+  ground?: number
+}
+
+export function createGrove<T>(spec: FolderSpec<T>, { still = false, ground }: Options = {}): Grove<T> {
   const world = layout(spec)
-  const nodes = new Map<string, GroveNode>(world.nodes.map((node) => [node.id, node]))
+  const nodes = new Map<string, GroveNode<T>>(world.nodes.map((node) => [node.id, node]))
   // Children before parents, so a retracting branch sees its children's final growth.
   const deepestFirst = [...world.branches.values()].reverse()
-  const childFolders = new Map<string, GroveNode[]>()
+  const childFolders = new Map<string, GroveNode<T>[]>()
   for (const node of world.nodes) {
     if (node.kind !== 'folder') continue
     childFolders.set(node.parent, [...(childFolders.get(node.parent) ?? []), node])
@@ -75,6 +99,8 @@ export function createGrove(spec: FolderSpec, { still = false } = {}): Grove {
   let view: Vec2 = [864, 545]
   let glide: Vec2 = [0, 0]
   let focused = ROOT_ID
+  let location = ROOT_ID
+  let moved = false
   let bounds: Bounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 }
   let spill = { x: false, y: false }
   let canPan = false
@@ -85,7 +111,7 @@ export function createGrove(spec: FolderSpec, { still = false } = {}): Grove {
   const leftmost = () => world.branches.get(ROOT_ID)!.focus[0] + TRUNK_TUCK + view[0] / 2
 
   const focusOn = (id: string): Vec2 => {
-    if (id === ROOT_ID) return [leftmost(), 0]
+    if (id === ROOT_ID) return [leftmost(), ground === undefined ? 0 : ground - view[1] / 2]
     const [x, y] = world.branches.get(id)!.focus
     // Keep the opened folder itself in view, however the view is shaped.
     const [fx, fy] = nodes.get(id)!.at
@@ -111,9 +137,13 @@ export function createGrove(spec: FolderSpec, { still = false } = {}): Grove {
     }
     for (const branch of world.branches.values()) {
       const g = intended(branch.id)
+      // A closed folder's branch isn't there at all, not even its first point.
+      if (g === 0) continue
       const { points, lengths } = branch.path
       for (let i = 0; i < points.length && lengths[i] <= g; i++) add(points[i][0], points[i][1])
     }
+    // Everything down to the ground stays in reach.
+    if (ground !== undefined) box.maxY = Math.max(box.maxY, ground - MARGIN)
     for (const node of world.nodes) {
       if (intended(node.parent) < node.revealAt) continue
       const [x, y] = node.at
@@ -121,6 +151,9 @@ export function createGrove(spec: FolderSpec, { still = false } = {}): Grove {
       if (node.label === 'right') {
         add(x - 20, y - 20)
         add(x + 28 + label, y + 20)
+      } else if (node.label === 'left') {
+        add(x - 28 - label, y - 20)
+        add(x + 20, y + 20)
       } else {
         add(x - Math.max(20, label / 2), y - 20)
         add(x + Math.max(20, label / 2), y + 44)
@@ -132,16 +165,19 @@ export function createGrove(spec: FolderSpec, { still = false } = {}): Grove {
   /**
    * Where the camera may sit, per axis. If the plant spills past the view, the
    * view can roam over it but not off it; if it fits, the view keeps all of it
-   * in sight. Either way the trunk enters from the left edge.
+   * in sight. Either way the trunk enters from the left edge, and the view
+   * stays above the ground.
    */
   const cameraRange = () => {
     const [halfW, halfH] = [view[0] / 2, view[1] / 2]
     const right = bounds.maxX + MARGIN - halfW
     const top = bounds.minY - MARGIN + halfH
     const bottom = bounds.maxY + MARGIN - halfH
+    const [low, high] = top <= bottom ? [top, bottom] : [bottom, top]
+    const floor = ground === undefined ? Infinity : ground - halfH
     return {
       x: [leftmost(), Math.max(leftmost(), right)] as const,
-      y: (top <= bottom ? [top, bottom] : [bottom, top]) as readonly [number, number],
+      y: [Math.min(low, floor), Math.min(high, floor)] as const,
       spills: { x: right > leftmost() + 1, y: top < bottom - 1 },
     }
   }
@@ -165,6 +201,40 @@ export function createGrove(spec: FolderSpec, { still = false } = {}): Grove {
   reframe()
   camera = target
 
+  const moveTo = (id: string) => {
+    if (id === location) return
+    location = id
+    moved = true
+  }
+
+  const open = (id: string) => {
+    const node = nodes.get(id)
+    if (!node) return
+    moveTo(id)
+    if (node.kind === 'folder' && !expanded.has(id)) {
+      for (let at: GroveNode<T> | undefined = node; at; at = nodes.get(at.parent)) expanded.add(at.id)
+      focused = id
+      reframe()
+      glide = [0, 0]
+    }
+    refresh()
+  }
+
+  const close = (id: string) => {
+    const node = nodes.get(id)
+    if (!node) return
+    if (location === id || location.startsWith(`${id}/`)) moveTo(node.parent)
+    if (node.kind === 'folder' && expanded.has(id)) {
+      for (const folder of expanded) {
+        if (folder === id || folder.startsWith(`${id}/`)) expanded.delete(folder)
+      }
+      focused = node.parent
+      reframe()
+      glide = [0, 0]
+    }
+    refresh()
+  }
+
   // A closing branch can't retract past a child folder whose branch is still out.
   const floorOf = (id: string) => {
     let floor = 0
@@ -175,7 +245,8 @@ export function createGrove(spec: FolderSpec, { still = false } = {}): Grove {
   }
 
   const refresh = () => {
-    let changed = false
+    let changed = moved
+    moved = false
     for (const node of world.nodes) {
       const show = (growth.get(node.parent) ?? 0) >= node.revealAt
       if (show !== visible.has(node.id)) {
@@ -184,9 +255,9 @@ export function createGrove(spec: FolderSpec, { still = false } = {}): Grove {
         changed = true
       }
       if (node.kind === 'folder') {
-        const open = expanded.has(node.id) || (growth.get(node.id) ?? 0) > 0
-        if (open !== openIcons.has(node.id)) {
-          if (open) openIcons.add(node.id)
+        const looksOpen = expanded.has(node.id) || (growth.get(node.id) ?? 0) > 0
+        if (looksOpen !== openIcons.has(node.id)) {
+          if (looksOpen) openIcons.add(node.id)
           else openIcons.delete(node.id)
           changed = true
         }
@@ -211,6 +282,9 @@ export function createGrove(spec: FolderSpec, { still = false } = {}): Grove {
     get camera() {
       return camera
     },
+    get home() {
+      return focusOn(ROOT_ID)
+    },
     get count() {
       return visible.size
     },
@@ -221,18 +295,30 @@ export function createGrove(spec: FolderSpec, { still = false } = {}): Grove {
     isVisible: (id) => visible.has(id),
     isOpen: (id) => openIcons.has(id),
 
+    get location() {
+      return location
+    },
+
+    open,
+    close,
+
     toggle(id) {
+      if (expanded.has(id)) close(id)
+      else open(id)
+    },
+
+    go(path) {
+      let id = path.length > 1 ? path.replace(/\/+$/, '') : ROOT_ID
+      if (!id.startsWith('/')) id = `/${id}`
+      while (id !== ROOT_ID && !nodes.has(id)) id = id.slice(0, id.lastIndexOf('/')) || ROOT_ID
       const node = nodes.get(id)
-      if (!node || node.kind !== 'folder') return
-      if (expanded.has(id)) {
-        for (const folder of expanded) {
-          if (folder === id || folder.startsWith(`${id}/`)) expanded.delete(folder)
-        }
-        focused = node.parent
-      } else {
-        for (let at: GroveNode | undefined = node; at; at = nodes.get(at.parent)) expanded.add(at.id)
-        focused = id
-      }
+      const folder = !node ? ROOT_ID : node.kind === 'folder' ? id : node.parent
+      const onTheWay = new Set([ROOT_ID])
+      for (let at = nodes.get(folder); at; at = nodes.get(at.parent)) onTheWay.add(at.id)
+      for (const folder of expanded) if (!onTheWay.has(folder)) expanded.delete(folder)
+      for (const folder of onTheWay) expanded.add(folder)
+      focused = folder
+      moveTo(id)
       reframe()
       glide = [0, 0]
       refresh()
@@ -262,6 +348,8 @@ export function createGrove(spec: FolderSpec, { still = false } = {}): Grove {
         let g = growth.get(branch.id)!
         if (expanded.has(branch.id)) {
           if (branch.id === ROOT_ID && clock < INTRO_DELAY && !still) continue
+          // A deep link opens folders that haven't grown in yet; each waits for its own folder to show.
+          if (branch.id !== ROOT_ID && !visible.has(branch.id)) continue
           if (still) g = end
           else if (g < end) {
             let tween = tweens.get(branch.id)

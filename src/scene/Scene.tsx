@@ -1,20 +1,22 @@
 import { Canvas, useFrame } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
 import { OrthographicCamera, Vector2 } from 'three'
-import { pixelGrid, type Grove, type PixelGrid } from '../grove'
+import { pixelGrid, type Bounds, type Grove, type PixelGrid } from '../grove'
 import { createDither } from './dither.ts'
 import { barkMaterial, foliageMaterial } from './materials.ts'
 import { growPlant } from './plant.ts'
 
 interface Props {
   grove: Grove
+  /** World areas where words sit (labels, the masthead): twigs stop short of them. */
+  keepOut: Bounds[]
   /** CSS px per world px. */
   scale: number
   dpr: number
 }
 
 // Drives the grove's clock too, so labels and branches move in the same frame.
-export default function Scene({ grove, scale, dpr }: Props) {
+export default function Scene({ grove, keepOut, scale, dpr }: Props) {
   return (
     <Canvas
       className="!absolute inset-0 [image-rendering:pixelated]"
@@ -23,7 +25,7 @@ export default function Scene({ grove, scale, dpr }: Props) {
       flat
       gl={{ alpha: true, antialias: false, powerPreference: 'high-performance' }}
     >
-      <Garden grove={grove} scale={scale} />
+      <Garden grove={grove} keepOut={keepOut} scale={scale} />
     </Canvas>
   )
 }
@@ -62,16 +64,16 @@ function aim(
   camera.updateProjectionMatrix()
 }
 
-function Garden({ grove, scale }: { grove: Grove; scale: number }) {
+function Garden({ grove, keepOut, scale }: { grove: Grove; keepOut: Bounds[]; scale: number }) {
   const plants = useMemo(
     () =>
       [...grove.layout.branches.values()].map((branch) => ({
         id: branch.id,
-        ...growPlant(branch),
+        ...growPlant(branch, keepOut),
         barkMaterial: barkMaterial(),
         foliageMaterial: foliageMaterial(),
       })),
-    [grove],
+    [grove, keepOut],
   )
   const camera = useMemo(() => {
     const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 1000)

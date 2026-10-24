@@ -5,7 +5,7 @@ import {
   InstancedBufferGeometry,
   PlaneGeometry,
 } from 'three'
-import type { GroveBranch, Polyline } from '../grove'
+import type { Bounds, GroveBranch, Polyline } from '../grove'
 
 // Everything here is in three's frame: x right, y up, z toward the camera.
 type V2 = [number, number]
@@ -38,10 +38,14 @@ const TIP_LEAVES: [RGB, number][] = [
   [LEAF.pale, 0.08], [LEAF.green, 0.06],
 ]
 const SPECKS: [RGB, number][] = [
-  [[0.72, 0.12, 0.12], 0.3], [[0.86, 0.55, 0.53], 0.25], [[0.36, 0.09, 0.08], 0.2], [[0.05, 0.04, 0.04], 0.25],
+  [[0.18, 0.45, 0.75], 0.3], [[0.53, 0.81, 0.92], 0.25], [[0.11, 0.25, 0.42], 0.2], [[0.05, 0.04, 0.04], 0.25],
 ]
 
-export function growPlant(branch: GroveBranch): Plant {
+/**
+ * The plant for one folder's branch. `keepOut` lists world areas (y down)
+ * where words sit, such as labels and the masthead: twigs stop short of them.
+ */
+export function growPlant(branch: GroveBranch, keepOut: Bounds[] = []): Plant {
   const rng = random(branch.id)
   const bark = new BarkBuilder()
   const leaves = new FoliageBuilder()
@@ -57,9 +61,11 @@ export function growPlant(branch: GroveBranch): Plant {
   const heft = Math.sqrt(branch.load)
   const flare = isTrunk ? 0 : 0.6 + 0.45 * heft
   // Every branch, the trunk included, draws down to a fine point over its last third.
-  const point = (s: number) => Math.min(1, (1 - s / length) / 0.35) ** 1.2
+  // Clamped: a stick's last step can overshoot its length by a hair, and pow() of a negative is NaN.
+  const left = (s: number, of: number) => Math.max(0, 1 - s / of)
+  const point = (s: number) => Math.min(1, left(s, length) / 0.35) ** 1.2
   const radius = (s: number) =>
-    0.42 + (branch.width * Math.pow(1 - s / length, taper) + flare * Math.exp(-s / 14)) * point(s)
+    0.42 + (branch.width * Math.pow(left(s, length), taper) + flare * Math.exp(-s / 14)) * point(s)
 
   bark.tube(main, {
     radius: (_, s) => radius(s),
@@ -80,7 +86,7 @@ export function growPlant(branch: GroveBranch): Plant {
     const stretch = fitStretch(limb.from + 15, limb.length, 1.6, extent)
     const reveal = (s: number) => limb.from + 15 + s * stretch
     bark.tube(line, {
-      radius: (_, s) => 0.7 * Math.pow(1 - s / limb.length, 1.2) + 0.4,
+      radius: (_, s) => 0.7 * Math.pow(left(s, limb.length), 1.2) + 0.4,
       reveal: (_, s) => reveal(s),
       color: barkColors(rng, line.points.length),
       sway: (_, s) => (0.45 * s) / limb.length,
@@ -96,34 +102,44 @@ export function growPlant(branch: GroveBranch): Plant {
     const side = rng() < 0.55 ? 1 : -1
     const angle = (0.35 + 0.5 * rng()) * side
     const twigLength = (32 + 48 * rng()) * (1 - (0.3 * s) / length)
-    const line = twig(rng, frame.point, rotate(frame.tangent, angle), twigLength)
+    const grown = twig(rng, frame.point, rotate(frame.tangent, angle), twigLength)
+    const line = shortOf(grown, keepOut)
     const from = s + 18
     const stretch = fitStretch(from, line.length, 2, extent)
     const reveal = (t: number) => from + t * stretch
-    bark.tube(line, {
-      radius: (_, t) => 0.3 * (1 - t / line.length) + 0.38,
-      reveal: (_, t) => reveal(t),
-      color: barkColors(rng, line.points.length),
-      sway: (_, t) => (0.5 * t) / line.length,
-      sides: 5,
-    })
-    sprouts.push({ line, reveal, from: s })
+    // Colours are drawn for the whole twig, so cutting one short leaves the rest of the plant as it was.
+    const color = barkColors(rng, grown.points.length)
+    const drawn = line.points.length > 2
+    if (drawn) {
+      bark.tube(line, {
+        radius: (_, t) => 0.3 * (1 - t / line.length) + 0.38,
+        reveal: (_, t) => reveal(t),
+        color,
+        sway: (_, t) => (0.5 * t) / line.length,
+        sides: 5,
+      })
+      sprouts.push({ line, reveal, from: s })
+    }
 
     if (rng() < 0.2) {
       const at = line.length * (0.4 + 0.3 * rng())
       const fork = frameAt(line, at)
-      const sub = twig(rng, fork.point, rotate(fork.tangent, (0.5 + 0.4 * rng()) * (rng() < 0.5 ? 1 : -1)), twigLength * 0.45)
+      const forked = twig(rng, fork.point, rotate(fork.tangent, (0.5 + 0.4 * rng()) * (rng() < 0.5 ? 1 : -1)), twigLength * 0.45)
+      const sub = shortOf(forked, keepOut)
       const subFrom = reveal(at) + 10
       const subStretch = fitStretch(subFrom, sub.length, 2, extent)
       const subReveal = (t: number) => subFrom + t * subStretch
-      bark.tube(sub, {
-        radius: (_, t) => 0.15 * (1 - t / sub.length) + 0.36,
-        reveal: (_, t) => subReveal(t),
-        color: barkColors(rng, sub.points.length),
-        sway: (_, t) => 0.3 + (0.4 * t) / sub.length,
-        sides: 4,
-      })
-      sprouts.push({ line: sub, reveal: subReveal, from: s })
+      const subColor = barkColors(rng, forked.points.length)
+      if (drawn && sub.points.length > 2) {
+        bark.tube(sub, {
+          radius: (_, t) => 0.15 * (1 - t / sub.length) + 0.36,
+          reveal: (_, t) => subReveal(t),
+          color: subColor,
+          sway: (_, t) => 0.3 + (0.4 * t) / sub.length,
+          sides: 4,
+        })
+        sprouts.push({ line: sub, reveal: subReveal, from: s })
+      }
     }
   }
 
@@ -147,10 +163,14 @@ export function growPlant(branch: GroveBranch): Plant {
     })
   }
 
-  // Older growth has started to turn: patches of amber and orange, more of
-  // them toward the tips. Openings stay fresh, so nothing turns near them.
+  // Older growth has started to turn, more of it toward the tips: patches
+  // flower sky blue, or near the base fade to a light amber with age. Openings
+  // stay fresh, so nothing turns near them. Which way a patch turns comes from
+  // its own stream, so the leaves themselves keep their places.
   const fresh = isTrunk ? 240 : 40 + 30 * heft
   const turning = (s: number) => (s > fresh && rng() < 0.15 + 0.35 * (s / length) ? 0.3 + 0.6 * rng() : 0)
+  const tint = random(`${branch.id}/tint`)
+  const patch = (s: number) => (tint() < 0.35 + 0.5 * (s / length) ? BLOSSOM : AGEING)
 
   // Clumps scale with the bark they sit on: the trunk carries the biggest.
   const fullest = isTrunk ? 25 : 8 + 4 * heft
@@ -166,11 +186,13 @@ export function growPlant(branch: GroveBranch): Plant {
     const r = radius(s)
     const reveal = () => Math.min(extent, s + 10 + rng() * 80)
     const turn = turning(s)
+    const ramp = turn > 0 ? patch(s) : undefined
     // In front of the bark, so each clump sits on the branch rather than behind it.
     clump(leaves, rng, along(frame, r * 0.45 + size * (0.25 + 0.35 * rng())), size, {
       z: r + 0.5,
       light: age * 0.15,
       turn,
+      ramp,
       reveal,
     })
     // Now and then a smaller clump hangs underneath.
@@ -179,6 +201,7 @@ export function growPlant(branch: GroveBranch): Plant {
         z: r + 0.5,
         light: age * 0.15 - 0.1,
         turn: turn * 1.2,
+        ramp,
         reveal,
       })
     }
@@ -195,7 +218,7 @@ export function growPlant(branch: GroveBranch): Plant {
       z: r + 0.5,
       size: [2.2 + rng(), 2.2 + rng()],
       angle: rng() * Math.PI,
-      color: s > fresh && rng() < 0.45 ? shade(0.3 + rng() * 0.6, AUTUMN) : pick(rng, SPECKS),
+      color: s > fresh && rng() < 0.45 ? shade(0.3 + rng() * 0.6, patch(s)) : pick(rng, SPECKS),
       reveal: Math.min(extent, s + 6),
       phase: rng() * 6.28,
     })
@@ -225,7 +248,7 @@ export function growPlant(branch: GroveBranch): Plant {
         z: 2,
         size: [2.6 + rng() * 0.8, 2.2 + rng() * 0.6],
         angle: rng() * Math.PI,
-        color: from > fresh && rng() < 0.4 ? shade(0.4 + rng() * 0.5, AUTUMN) : shade(0.6 + rng() * 0.35),
+        color: from > fresh && rng() < 0.4 ? shade(0.4 + rng() * 0.5, patch(from)) : shade(0.6 + rng() * 0.35),
         reveal: Math.min(extent, reveal(at) + 8),
         phase: rng() * 6.28,
       })
@@ -250,20 +273,26 @@ function along(frame: ReturnType<typeof frameAt>, offset: number): V2 {
  * A rounded clump of leaves, lit from above: deep green and olive underneath,
  * lime through the middle, yellow and pale highlights on top. The core is
  * dense; the fringe thins to small leaves that only part-cover their cells, so
- * the edge dithers softly. `turn` (0–1) is how much of it has gone autumnal:
- * one side of the clump, cut at a random angle, so it reads as a patch.
+ * the edge dithers softly. `turn` (0–1) is how much of it has turned to
+ * `ramp`: one side of the clump, cut at a random angle, so it reads as a patch.
  */
 function clump(
   leaves: FoliageBuilder,
   rng: () => number,
   [cx, cy]: V2,
   size: number,
-  { z, light = 0, turn = 0, reveal }: { z: number; light?: number; turn?: number; reveal: () => number },
+  {
+    z,
+    light = 0,
+    turn = 0,
+    ramp = BLOSSOM,
+    reveal,
+  }: { z: number; light?: number; turn?: number; ramp?: Ramp; reveal: () => number },
 ) {
   const count = Math.round(0.5 * size * size) + 3
   const cut = rng() * Math.PI * 2
-  // Some patches have gone golden, others deeper orange.
-  const warmth = (rng() - 0.3) * 0.5
+  // Some patches are paler than others.
+  const pallor = (rng() - 0.3) * 0.5
   for (let i = 0; i < count; i++) {
     const distance = Math.pow(rng(), 0.8)
     const angle = rng() * Math.PI * 2
@@ -272,14 +301,14 @@ function clump(
     const fringe = distance > 0.78
     const leaf = fringe ? 2.4 + rng() * 1.2 : 3.8 + rng() * 2.4
     const height = (dy + 1) / 2
-    const autumn = turn > 0 && dx * Math.cos(cut) + dy * Math.sin(cut) + (rng() - 0.5) * 0.6 > 1 - 2 * turn
+    const turned = turn > 0 && dx * Math.cos(cut) + dy * Math.sin(cut) + (rng() - 0.5) * 0.6 > 1 - 2 * turn
     leaves.add({
       at: [cx + dx * size * 1.15, cy + dy * size * 0.9],
       z: z + rng() * 4,
       size: [leaf, leaf * (0.6 + rng() * 0.4)],
       angle: rng() * Math.PI,
-      color: autumn
-        ? shade(height + warmth + (rng() - 0.5) * 0.24, AUTUMN)
+      color: turned
+        ? shade(height + pallor + (rng() - 0.5) * 0.24, ramp)
         : shade(height + light + (rng() - 0.5) * 0.24),
       reveal: reveal(),
       phase: rng() * 6.28,
@@ -287,7 +316,9 @@ function clump(
   }
 }
 
-const RAMP: [number, RGB][] = [
+type Ramp = [number, RGB][]
+
+const RAMP: Ramp = [
   [0, LEAF.deep],
   [0.25, LEAF.olive],
   [0.45, LEAF.green],
@@ -297,12 +328,20 @@ const RAMP: [number, RGB][] = [
   [1, LEAF.pale],
 ]
 
-const AUTUMN: [number, RGB][] = [
-  [0, [0.5, 0.22, 0.09]], // rust
-  [0.35, [0.86, 0.45, 0.14]], // orange
-  [0.65, [0.95, 0.63, 0.22]], // amber
-  [0.85, [0.97, 0.8, 0.3]], // gold
-  [1, [0.97, 0.92, 0.55]], // straw
+const BLOSSOM: Ramp = [
+  [0, [0.11, 0.25, 0.42]], // navy
+  [0.35, [0.18, 0.45, 0.75]], // deep sky
+  [0.65, [0.31, 0.64, 0.88]], // cornflower
+  [0.85, [0.53, 0.81, 0.92]], // sky
+  [1, [0.71, 0.89, 0.97]], // pale sky
+]
+
+const AGEING: Ramp = [
+  [0, [0.6, 0.42, 0.16]], // ochre
+  [0.35, [0.82, 0.6, 0.24]], // amber
+  [0.65, [0.93, 0.76, 0.38]], // light amber
+  [0.85, [0.97, 0.86, 0.54]], // honey
+  [1, [0.98, 0.93, 0.7]], // cream
 ]
 
 /** Leaf colour by how much light it catches, 0 (shadow) to 1 (highlight). */
@@ -445,6 +484,19 @@ function barkColors(rng: () => number, count: number) {
     }
   }
   return (i: number) => colors[i]
+}
+
+/** World px a twig keeps clear of words. */
+const ROOM = 8
+
+/** A twig cut off just before it would first grow into an area it must keep out of. */
+function shortOf(line: Line, keepOut: Bounds[]): Line {
+  const blocked = ([x, y]: V2) =>
+    keepOut.some((box) => x > box.minX - ROOM && x < box.maxX + ROOM && -y > box.minY - ROOM && -y < box.maxY + ROOM)
+  const end = line.points.findIndex(blocked)
+  if (end === -1) return line
+  const kept = Math.max(1, end)
+  return { points: line.points.slice(0, kept), lengths: line.lengths.slice(0, kept), length: line.lengths[kept - 1] }
 }
 
 /** Slow a sprout's growth so it finishes before its branch stops growing. */

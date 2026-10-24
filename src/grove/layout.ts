@@ -1,5 +1,5 @@
 export type Vec2 = readonly [number, number]
-export type LabelSide = 'right' | 'below'
+export type LabelSide = 'right' | 'left' | 'below'
 
 export interface BranchSpec {
   /** Bark radius at the base, in world px. By default a folder's branch is as stout as what it holds. */
@@ -10,19 +10,22 @@ export interface BranchSpec {
   limbs?: Vec2[][]
 }
 
-export interface FileSpec {
+/** `T` is whatever the page needs to show an entry; the grove only carries it. */
+export interface FileSpec<T = unknown> {
   name: string
   at: Vec2
   label: LabelSide
+  data?: T
 }
 
-export interface FolderSpec {
+export interface FolderSpec<T = unknown> {
   name: string
   branch: BranchSpec
-  children: EntrySpec[]
+  children: EntrySpec<T>[]
+  data?: T
 }
 
-export type EntrySpec = FileSpec | (FolderSpec & { at: Vec2; label: LabelSide })
+export type EntrySpec<T = unknown> = FileSpec<T> | (FolderSpec<T> & { at: Vec2; label: LabelSide })
 
 export interface Polyline {
   points: Vec2[]
@@ -51,7 +54,7 @@ export interface GroveBranch {
   focus: Vec2
 }
 
-export interface GroveNode {
+export interface GroveNode<T = unknown> {
   id: string
   name: string
   kind: 'folder' | 'file'
@@ -61,13 +64,14 @@ export interface GroveNode {
   label: LabelSide
   /** Growth of the parent branch at which the node appears. */
   revealAt: number
+  data?: T
 }
 
-export interface Layout {
+export interface Layout<T = unknown> {
   rootId: string
   branches: ReadonlyMap<string, GroveBranch>
   /** Depth-first, so a folder always precedes its children. */
-  nodes: GroveNode[]
+  nodes: GroveNode<T>[]
   bounds: { minX: number; minY: number; maxX: number; maxY: number }
 }
 
@@ -79,9 +83,9 @@ const REVEAL_LAG = 25
 /** Where a branch leaves its folder: the top edge of the open folder icon, right of centre. */
 const MOUTH: Vec2 = [12, -11]
 
-export function layout(spec: FolderSpec): Layout {
+export function layout<T>(spec: FolderSpec<T>): Layout<T> {
   const branches = new Map<string, GroveBranch>()
-  const nodes: GroveNode[] = []
+  const nodes: GroveNode<T>[] = []
   const bounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
   const grow = ([x, y]: Vec2) => {
     bounds.minX = Math.min(bounds.minX, x)
@@ -90,7 +94,7 @@ export function layout(spec: FolderSpec): Layout {
     bounds.maxY = Math.max(bounds.maxY, y)
   }
 
-  const visit = (folder: FolderSpec, id: string, parent: string | null, at: Vec2 | null) => {
+  const visit = (folder: FolderSpec<T>, id: string, parent: string | null, at: Vec2 | null) => {
     const control = at ? [[at[0] + MOUTH[0], at[1] + MOUTH[1]] as const, ...folder.branch.path] : folder.branch.path
     const path = smooth(control)
     const limbs = (folder.branch.limbs ?? []).map((points) => ({
@@ -122,6 +126,7 @@ export function layout(spec: FolderSpec): Layout {
         at: child.at,
         label: child.label,
         revealAt: Math.min(nearest(path, child.at) + REVEAL_LAG, path.length),
+        data: child.data,
       })
       grow(child.at)
       if (isFolder) visit(child, childId, id, child.at)
@@ -132,12 +137,12 @@ export function layout(spec: FolderSpec): Layout {
   return { rootId: ROOT_ID, branches, nodes, bounds }
 }
 
-function countEntries(folder: FolderSpec): number {
+function countEntries(folder: FolderSpec<unknown>): number {
   return folder.children.reduce((count, child) => count + 1 + ('branch' in child ? countEntries(child) : 0), 0)
 }
 
 /** Frames a folder's icon, its children with their labels, and its branch. */
-function focusOf(at: Vec2, children: EntrySpec[], path: Polyline): Vec2 {
+function focusOf(at: Vec2, children: EntrySpec<unknown>[], path: Polyline): Vec2 {
   let minX = at[0] - 18
   let maxX = at[0] + 18
   let minY = at[1] - 16
@@ -148,6 +153,11 @@ function focusOf(at: Vec2, children: EntrySpec[], path: Polyline): Vec2 {
     if (child.label === 'right') {
       minX = Math.min(minX, x - 18)
       maxX = Math.max(maxX, x + 26 + labelWidth)
+      minY = Math.min(minY, y - 16)
+      maxY = Math.max(maxY, y + 16)
+    } else if (child.label === 'left') {
+      minX = Math.min(minX, x - 26 - labelWidth)
+      maxX = Math.max(maxX, x + 18)
       minY = Math.min(minY, y - 16)
       maxY = Math.max(maxY, y + 16)
     } else {

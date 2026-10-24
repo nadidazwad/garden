@@ -1,113 +1,163 @@
-import { useLayoutEffect, useRef, useSyncExternalStore, type ReactNode } from 'react'
-import type { Grove, GroveNode } from '../grove'
-import { fileGlyph, glyphs, PixelIcon, type GlyphName } from '../icons'
+import { useLayoutEffect, useRef, useSyncExternalStore, type CSSProperties } from 'react'
+import type { Grove, GroveNode, LabelSide } from '../grove'
+import { glyphs, PixelIcon, type GlyphName } from '../icons'
+import type { Entry } from '../portfolio'
+import { toScreen, type View } from './view.ts'
 
 interface Props {
-  grove: Grove
-  scale: number
-  dpr: number
-  width: number
-  height: number
+  grove: Grove<Entry>
+  view: View
+  onOpen: (node: GroveNode<Entry>) => void
 }
 
 /** Icons and names for every file and folder, pinned to where the plant draws them. */
-export function Nodes({ grove, scale, dpr, width, height }: Props) {
+export function Nodes({ grove, view, onOpen }: Props) {
   useSyncExternalStore(grove.subscribe, () => grove.version)
   const anchors = useRef(new Map<string, HTMLDivElement>())
 
   useLayoutEffect(() => {
     const place = () => {
-      const [cx, cy] = grove.camera
       for (const node of grove.layout.nodes) {
         const anchor = anchors.current.get(node.id)
         if (!anchor) continue
-        const x = Math.round(((node.at[0] - cx) * scale + width / 2) * dpr) / dpr
-        const y = Math.round(((node.at[1] - cy) * scale + height / 2) * dpr) / dpr
+        const [x, y] = toScreen(grove, view, node.at)
         anchor.style.transform = `translate3d(${x}px, ${y}px, 0)`
       }
     }
     place()
     return grove.onFrame(place)
-  }, [grove, scale, dpr, width, height])
+  }, [grove, view])
 
   return (
-    <div className="pointer-events-none absolute inset-0 select-none" role="tree" aria-label="Documents">
-      {grove.layout.nodes.map((node) => (
-        <div
-          key={node.id}
-          ref={(element) => {
-            if (element) anchors.current.set(node.id, element)
-            else anchors.current.delete(node.id)
-          }}
-          className="absolute left-0 top-0 transition-[opacity,visibility] duration-150 ease-out data-hidden:invisible data-hidden:opacity-0"
-          data-hidden={grove.isVisible(node.id) ? undefined : ''}
-          inert={!grove.isVisible(node.id)}
-        >
-          {/* Scales about the icon's centre, which is this wrapper's origin. */}
-          <div className={`absolute left-0 top-0 origin-top-left ${grove.isVisible(node.id) ? 'motion-safe:animate-pop' : ''}`}>
-            {node.kind === 'folder' ? (
-              <Folder node={node} open={grove.isOpen(node.id)} onToggle={() => grove.toggle(node.id)} />
-            ) : (
-              <File node={node} />
-            )}
+    <div className="pointer-events-none absolute inset-0 select-none" role="tree" aria-label="Nadid Azwad’s work">
+      {grove.layout.nodes.map((node) => {
+        const visible = grove.isVisible(node.id)
+        return (
+          <div
+            key={node.id}
+            ref={(element) => {
+              if (element) anchors.current.set(node.id, element)
+              else anchors.current.delete(node.id)
+            }}
+            className="absolute left-0 top-0 transition-[opacity,visibility] duration-150 ease-out data-hidden:invisible data-hidden:opacity-0"
+            data-hidden={visible ? undefined : ''}
+            inert={!visible}
+          >
+            {/* Scales about the icon's centre, which is this wrapper's origin. */}
+            <div className={`absolute left-0 top-0 origin-top-left ${visible ? 'motion-safe:animate-pop' : ''}`}>
+              {node.kind === 'folder' ? (
+                <Folder node={node} open={grove.isOpen(node.id)} here={grove.location === node.id} onToggle={() => grove.toggle(node.id)} />
+              ) : (
+                <File node={node} here={grove.location === node.id} onOpen={() => onOpen(node)} />
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
 
-const LABEL = 'whitespace-nowrap text-[length:calc(var(--spacing)*16)] leading-[1.2]'
+const LABEL = 'halo whitespace-nowrap text-[length:calc(var(--spacing)*16)] leading-[1.2]'
+const NOTE = 'halo whitespace-nowrap text-[length:calc(var(--spacing)*12.5)] leading-[1.3] text-muted'
 
-function Folder({ node, open, onToggle }: { node: GroveNode; open: boolean; onToggle: () => void }) {
+function Folder({ node, open, here, onToggle }: { node: GroveNode<Entry>; open: boolean; here: boolean; onToggle: () => void }) {
   const glyph: GlyphName = open ? 'openFolder' : 'folder'
+  const entry = node.data?.kind === 'folder' ? node.data : undefined
   return (
-    <Anchor glyph={glyph} below={node.label === 'below'}>
-      <button
-        type="button"
-        role="treeitem"
-        aria-expanded={open}
+    <Item
+        node={node}
+        glyph={glyph}
+        expanded={open}
         onClick={onToggle}
-        className={`group pointer-events-auto flex cursor-pointer items-center rounded-[4px] outline-none focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-accent ${node.label === 'below' ? 'flex-col gap-4' : 'gap-8'}`}
-      >
-        <PixelIcon
-          name={glyph}
-          className={`transition-colors duration-150 group-hover:text-accent ${open ? 'text-ink' : 'text-muted'}`}
-        />
-        {/* An open folder's name steps back; its contents are what matter now. */}
-        <span className={`${LABEL} transition-colors duration-150 group-hover:text-accent ${open ? 'text-muted' : 'text-ink'}`}>
-          {node.name}/
-        </span>
-      </button>
-    </Anchor>
+        iconClass={open ? 'text-ink' : 'text-muted'}
+        // An open folder's name steps back; its contents are what matter now.
+        labelClass={open && !here ? 'text-muted' : 'text-ink'}
+        name={`${node.name}/`}
+      note={entry?.note}
+    />
   )
 }
 
-function File({ node }: { node: GroveNode }) {
-  const glyph = fileGlyph(node.name)
+function File({ node, here, onOpen }: { node: GroveNode<Entry>; here: boolean; onOpen: () => void }) {
+  const entry = node.data
+  const link = entry?.kind === 'link'
   return (
-    <Anchor glyph={glyph} below={node.label === 'below'}>
-      <span role="treeitem" className={`flex items-center ${node.label === 'below' ? 'flex-col gap-4' : 'gap-8'}`}>
-        <PixelIcon name={glyph} className="text-faint" />
-        <span className={`${LABEL} text-body`}>{node.name}</span>
-      </span>
-    </Anchor>
+    <Item
+      node={node}
+      glyph={glyphFor(entry)}
+      onClick={onOpen}
+      current={here}
+      iconClass={here ? 'text-accent' : 'text-faint'}
+      labelClass={here ? 'text-ink' : 'text-body'}
+      name={`${node.name}${link ? ' ↗' : ''}`}
+    />
   )
 }
 
-/** Centres the icon on the node's point; the name sits to its right or underneath. */
-function Anchor({ glyph, below, children }: { glyph: GlyphName; below: boolean; children: ReactNode }) {
+function glyphFor(entry: Entry | undefined): GlyphName {
+  switch (entry?.kind) {
+    case 'image':
+      return 'picture'
+    case 'video':
+      return 'film'
+    case 'case':
+      return 'page'
+    case 'link':
+      return 'link'
+    default:
+      return 'text'
+  }
+}
+
+interface ItemProps {
+  node: GroveNode<Entry>
+  glyph: GlyphName
+  name: string
+  note?: string
+  iconClass: string
+  labelClass: string
+  expanded?: boolean
+  current?: boolean
+  onClick: () => void
+}
+
+/**
+ * The icon sits centred on the node's point; the name hangs off it to the
+ * right, the left, or underneath. The whole thing is one button, as big as the icon.
+ */
+function Item({ node, glyph, name, note, iconClass, labelClass, expanded, current, onClick }: ItemProps) {
   const { width, height } = glyphs[glyph]
+  const px = (n: number) => `calc(var(--px) * ${n})`
+  const gap = 'calc(var(--spacing) * 8)'
+  const side: LabelSide = node.label
+  const label: CSSProperties =
+    side === 'right'
+      ? { left: `calc(100% + ${gap})`, top: '50%', transform: 'translateY(-50%)' }
+      : side === 'left'
+        ? { right: `calc(100% + ${gap})`, top: '50%', transform: 'translateY(-50%)', textAlign: 'right' }
+        : { left: '50%', top: 'calc(100% + var(--spacing) * 4)', transform: 'translateX(-50%)', textAlign: 'center' }
   return (
-    <div
-      className={below ? 'absolute flex w-240 justify-center' : 'absolute flex items-center'}
-      style={{
-        left: below ? 'calc(var(--spacing) * -120)' : `calc(var(--px) * ${-width / 2})`,
-        top: `calc(var(--px) * ${-height / 2})`,
-        height: below ? undefined : `calc(var(--px) * ${height})`,
-      }}
+    <button
+      type="button"
+      role="treeitem"
+      aria-expanded={expanded}
+      aria-current={current || undefined}
+      onClick={onClick}
+      className="group pointer-events-auto absolute block cursor-pointer outline-none"
+      style={{ left: px(-width / 2), top: px(-height / 2), width: px(width), height: px(height) }}
     >
-      {children}
-    </div>
+      <PixelIcon
+        name={glyph}
+        data-glyph={node.id}
+        className={`block transition-colors duration-150 group-hover:text-accent group-focus-visible:text-accent ${iconClass}`}
+      />
+      <span className="absolute flex flex-col" style={label}>
+        <span className={`${LABEL} transition-colors duration-150 group-hover:text-accent group-focus-visible:underline ${labelClass}`}>
+          {name}
+        </span>
+        {note && <span className={NOTE}>{note}</span>}
+      </span>
+    </button>
   )
 }
