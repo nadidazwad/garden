@@ -200,7 +200,7 @@ export const portfolio: FolderSpec<Entry> = {
               meta: 'StableConverse · 2026 · founding design engineer',
               alt: 'The StableConverse landing page',
             }),
-            file('stableconverse.com', [600, -690], 'right', link('https://stableconverse.com')),
+            file('stableconverse.com', [452, -748], 'left', link('https://stableconverse.com')),
             folder(
               'workspace',
               [668, -752],
