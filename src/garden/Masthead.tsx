@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { ROOT_ID, type Grove, type Vec2 } from '../grove'
 import { GROUND, INTRO, TIME } from '../portfolio'
 import { usePinned } from './usePinned.ts'
@@ -16,6 +16,8 @@ const TUCKED_LIFT = 26
 const BASELINE = 0.78
 /** Where the name sits, in world px: from its left edge to the end of "Azwad", from the tops of its letters to the ground. */
 const NAME = { minX: -404, maxX: 690, minY: GROUND - 0.75 * NAME_SIZE, maxY: GROUND }
+/** Once less than this much of the name is on screen, the small one drops in at the top. */
+const NAME_GONE = 0.5
 
 interface Props {
   grove: Grove<unknown>
@@ -28,16 +30,21 @@ interface Props {
  * and the time in opposite top corners. All three are set in the world, so
  * they pan with the plant. When a branch is about to grow across the
  * name, the name shrinks toward its bottom left corner to make room until the
- * branch goes. While the visitor is off in the folders, the intro and the
- * time step back to grey; pointing at them brings their colours back.
+ * branch goes, and once it leaves the screen a small one drops in at the
+ * top left. While the visitor is off in the folders, the intro and the time
+ * step back to grey; pointing at them brings their colours back.
  */
 export function Masthead({ grove, view, onContact }: Props) {
   const crossing = useCrossing(grove)
   const away = grove.location !== ROOT_ID
+  const name = useRef<HTMLHeadingElement>(null)
+  const nameShows = useOnScreen(name, NAME_GONE)
   return (
     <>
+      <SmallName shown={!nameShows} onClick={() => grove.go(ROOT_ID)} />
       <Pinned grove={grove} view={view} at={[NAME.minX, GROUND - BASELINE * NAME_SIZE]}>
         <h1
+          ref={name}
           className="font-mondwest whitespace-nowrap text-ink transition-[scale,translate] duration-700 ease-out-expo"
           style={{
             fontSize: w(NAME_SIZE),
@@ -74,6 +81,36 @@ function useCrossing(grove: Grove<unknown>) {
     return [...ids]
   }, [grove])
   return crossers.some((id) => grove.isOpen(id))
+}
+
+/** True while at least `share` of the element is on screen. */
+function useOnScreen(ref: RefObject<Element | null>, share: number) {
+  const [shows, setShows] = useState(true)
+  useEffect(() => {
+    const element = ref.current
+    if (!element) return
+    const observer = new IntersectionObserver(([entry]) => setShows(entry.intersectionRatio >= share), { threshold: share })
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [ref, share])
+  return shows
+}
+
+/** The name, small, pinned to the top left corner while the big one is out of sight; it takes you back to the start. */
+function SmallName({ shown, onClick }: { shown: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      inert={!shown}
+      aria-hidden={!shown}
+      className={`halo font-mondwest pointer-events-auto fixed left-[30px] top-[22px] z-10 cursor-pointer whitespace-nowrap text-[30px] leading-[34px] text-ink outline-none transition-[translate,opacity,color] hover:text-accent focus-visible:text-accent motion-reduce:translate-y-0 ${
+        shown ? 'translate-y-0 opacity-100 duration-500 ease-out-expo' : '-translate-y-[56px] opacity-0 duration-200 ease-in'
+      }`}
+    >
+      Nadid Azwad
+    </button>
+  )
 }
 
 interface PinnedProps {
