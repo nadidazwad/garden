@@ -20,6 +20,8 @@ export default function Scene({ grove, keepOut, scale, dpr }: Props) {
   return (
     <Canvas
       className="!absolute inset-0 [image-rendering:pixelated]"
+      // r3f lets its canvas take the pointer; the plant has nothing to point at, and the words under it do.
+      style={{ pointerEvents: 'none' }}
       dpr={dpr}
       linear
       flat
