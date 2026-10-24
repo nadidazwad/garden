@@ -9,7 +9,8 @@ export interface View {
   dpr: number
 }
 
-/** Where a world point is on screen, rounded to whole device pixels like the plant; by default, with the camera where it is now. */
-export function toScreen(grove: Grove<unknown>, { width, height, scale, dpr }: View, [x, y]: Vec2, [cx, cy] = grove.camera): Vec2 {
+/** Where a world point is on screen, rounded to whole device pixels like the plant. */
+export function toScreen(grove: Grove<unknown>, { width, height, scale, dpr }: View, [x, y]: Vec2): Vec2 {
+  const [cx, cy] = grove.camera
   return [Math.round(((x - cx) * scale + width / 2) * dpr) / dpr, Math.round(((y - cy) * scale + height / 2) * dpr) / dpr]
 }

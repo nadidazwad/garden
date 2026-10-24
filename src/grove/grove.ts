@@ -24,8 +24,6 @@ export interface Grove<T = unknown> {
   readonly location: string
   /** Centre of the view, in world px. */
   readonly camera: Vec2
-  /** Where the camera sits with nothing open: the trunk coming in from the left, the view on the ground. */
-  readonly home: Vec2
   /** Nodes currently showing. */
   readonly count: number
   /** True once the plant spills past the view; until then it all stays in view and the view stays put. */
@@ -281,9 +279,6 @@ export function createGrove<T>(spec: FolderSpec<T>, { still = false, ground }: O
     },
     get camera() {
       return camera
-    },
-    get home() {
-      return focusOn(ROOT_ID)
     },
     get count() {
       return visible.size

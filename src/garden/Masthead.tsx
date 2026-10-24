@@ -8,10 +8,10 @@ import type { View } from './view.ts'
 const w = (n: number) => `calc(var(--spacing) * ${n})`
 
 const NAME_SIZE = 212
-/** How far the name shrinks, into the bottom left corner, while a branch grows across where it stood. */
+/** How far the name shrinks, toward its bottom left corner, while a branch grows across where it stood. */
 const TUCKED = 0.3
-/** Screen px the tucked name rises by, so it stands level with the hello folder in the opposite corner. */
-const TUCKED_LIFT = 29
+/** World px the tucked name rises by, so in the opening view it stands level with the hello folder in the opposite corner. */
+const TUCKED_LIFT = 26
 /** How far PP Mondwest's baseline sits below the top of a line as tall as the type. */
 const BASELINE = 0.78
 /** Where the name sits, in world px: from its left edge to the end of "Azwad", from the tops of its letters to the ground. */
@@ -26,15 +26,15 @@ interface Props {
 /**
  * The name, huge, standing on the ground the plant grows out of; the intro
  * and the time in opposite top corners. All three are set in the world, so
- * they pan with the plant. When a branch is about to grow across the name,
- * the name shrinks into the bottom left corner of the screen to make room,
- * and stays there like the hello folder opposite until the branch goes.
+ * they pan with the plant. When a branch is about to grow across the
+ * name, the name shrinks toward its bottom left corner to make room until the
+ * branch goes.
  */
 export function Masthead({ grove, view, onContact }: Props) {
   const crossing = useCrossing(grove)
   return (
     <>
-      <Pinned grove={grove} view={view} at={[NAME.minX, GROUND - BASELINE * NAME_SIZE]} stay={crossing}>
+      <Pinned grove={grove} view={view} at={[NAME.minX, GROUND - BASELINE * NAME_SIZE]}>
         <h1
           className="font-mondwest whitespace-nowrap text-ink transition-[scale,translate] duration-700 ease-out-expo"
           style={{
@@ -43,7 +43,7 @@ export function Masthead({ grove, view, onContact }: Props) {
             // About the left end of the baseline, so it stays standing on the ground.
             transformOrigin: `0 ${BASELINE * 100}%`,
             scale: crossing ? TUCKED : 1,
-            translate: crossing ? `0 -${TUCKED_LIFT}px` : '0 0',
+            translate: crossing ? `0 ${w(-TUCKED_LIFT)}` : '0 0',
           }}
         >
           Nadid Azwad
@@ -78,13 +78,11 @@ interface PinnedProps {
   grove: Grove<unknown>
   view: View
   at: Vec2
-  /** Hold where it sits in the opening view rather than follow the plant. */
-  stay?: boolean
   children: ReactNode
 }
 
-function Pinned({ grove, view, at, stay, children }: PinnedProps) {
-  const ref = usePinned<HTMLDivElement>(grove, view, at, { stay })
+function Pinned({ grove, view, at, children }: PinnedProps) {
+  const ref = usePinned<HTMLDivElement>(grove, view, at)
   return (
     <div ref={ref} className="pointer-events-none absolute left-0 top-0 select-none">
       {children}
