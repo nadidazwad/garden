@@ -124,6 +124,15 @@
   }
 }
 
+/* Words set in the world step back to grey while the visitor is off in the
+   folders; pointing at them brings their colours back. */
+@layer utilities {
+  [data-quiet]:not(:hover, :focus-within),
+  [data-quiet]:not(:hover, :focus-within) * {
+    color: var(--color-faint);
+  }
+}
+
 /* Text sitting on the plant: a page-coloured outline keeps it legible over leaves. */
 @utility halo {
   text-shadow:

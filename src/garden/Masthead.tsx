@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { Grove, Vec2 } from '../grove'
+import { ROOT_ID, type Grove, type Vec2 } from '../grove'
 import { GROUND, INTRO, TIME } from '../portfolio'
 import { usePinned } from './usePinned.ts'
 import type { View } from './view.ts'
@@ -28,10 +28,12 @@ interface Props {
  * and the time in opposite top corners. All three are set in the world, so
  * they pan with the plant. When a branch is about to grow across the
  * name, the name shrinks toward its bottom left corner to make room until the
- * branch goes.
+ * branch goes. While the visitor is off in the folders, the intro and the
+ * time step back to grey; pointing at them brings their colours back.
  */
 export function Masthead({ grove, view, onContact }: Props) {
   const crossing = useCrossing(grove)
+  const away = grove.location !== ROOT_ID
   return (
     <>
       <Pinned grove={grove} view={view} at={[NAME.minX, GROUND - BASELINE * NAME_SIZE]}>
@@ -50,10 +52,10 @@ export function Masthead({ grove, view, onContact }: Props) {
         </h1>
       </Pinned>
       <Pinned grove={grove} view={view} at={[INTRO.minX, INTRO.minY]}>
-        <Intro grove={grove} onContact={onContact} />
+        <Intro grove={grove} quiet={away} onContact={onContact} />
       </Pinned>
       <Pinned grove={grove} view={view} at={[TIME.minX, TIME.minY]}>
-        <Clock />
+        <Clock quiet={away} />
       </Pinned>
     </>
   )
@@ -90,10 +92,14 @@ function Pinned({ grove, view, at, children }: PinnedProps) {
   )
 }
 
-function Intro({ grove, onContact }: { grove: Grove<unknown>; onContact: () => void }) {
+function Intro({ grove, quiet, onContact }: { grove: Grove<unknown>; quiet: boolean; onContact: () => void }) {
   const go = (path: string) => () => grove.go(path)
   return (
-    <p className="pointer-events-auto text-body" style={{ width: w(INTRO.maxX - INTRO.minX), fontSize: w(16), lineHeight: w(22) }}>
+    <p
+      className="pointer-events-auto text-body transition-colors duration-500"
+      data-quiet={quiet ? '' : undefined}
+      style={{ width: w(INTRO.maxX - INTRO.minX), fontSize: w(16), lineHeight: w(22) }}
+    >
       Designer and engineer in Dhaka. I make <Phrase onClick={go('/work/')}>websites, products</Phrase> and{' '}
       <Phrase onClick={go('/films/')}>short films</Phrase>. Right now I’m the{' '}
       <Phrase onClick={go('/work/stableconverse/')}>founding design engineer</Phrase> at StableConverse, an AI sales
@@ -111,7 +117,7 @@ function Phrase({ children, accent, onClick }: { children: ReactNode; accent?: b
     <button
       type="button"
       onClick={onClick}
-      className={`inline cursor-pointer text-left outline-none decoration-1 underline-offset-3 transition-colors duration-150 hover:text-accent hover:underline focus-visible:underline ${accent ? 'text-accent' : 'text-ink'}`}
+      className={`inline cursor-pointer text-left outline-none decoration-1 underline-offset-3 transition-colors duration-500 hover:text-accent hover:duration-150 hover:underline focus-visible:underline ${accent ? 'text-accent' : 'text-ink'}`}
     >
       {children}
     </button>
@@ -121,15 +127,19 @@ function Phrase({ children, accent, onClick }: { children: ReactNode; accent?: b
 const DHAKA = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dhaka', hour: 'numeric', minute: '2-digit', hour12: true })
 
 /** The time where I am, kept current. */
-function Clock() {
+function Clock({ quiet }: { quiet: boolean }) {
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 15_000)
     return () => clearInterval(timer)
   }, [])
   return (
-    <p className="whitespace-nowrap text-body" style={{ fontSize: w(13), lineHeight: w(17) }}>
-      It’s <time className="text-ink">{DHAKA.format(now)}</time> in Dhaka.
+    <p
+      className="pointer-events-auto whitespace-nowrap text-body transition-colors duration-500"
+      data-quiet={quiet ? '' : undefined}
+      style={{ fontSize: w(13), lineHeight: w(17) }}
+    >
+      It’s <time className="text-ink transition-colors duration-500">{DHAKA.format(now)}</time> in Dhaka.
     </p>
   )
 }
