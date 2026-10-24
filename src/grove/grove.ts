@@ -1,0 +1,310 @@
+import { layout, ROOT_ID, type FolderSpec, type GroveNode, type Layout, type Vec2 } from './layout.ts'
+
+const INTRO_DELAY = 0.35
+/** Retracting is quick: the branch snaps back into its folder. */
+const RETRACT_SPEED = 2400
+/** The camera eases toward where it's headed; fitted to the reference recording. */
+const CAMERA_RATE = 3.4
+/** How quickly a flung view slows down, per second. */
+const FRICTION = 5
+/** How much of the trunk's base sits off the left edge of the view. */
+const TRUNK_TUCK = 48
+/** Breathing room kept around the plant when it spills past the view. */
+const MARGIN = 60
+
+/** Growing is quick off the mark and slows gently into the tip. */
+const growTime = (distance: number) => Math.min(1.6, 0.6 + distance / 1000)
+const easeOut = (x: number) => 1 - (1 - x) ** 3
+
+export interface Grove {
+  readonly layout: Layout
+  /** Bumps whenever a node shows or hides, a folder icon opens or closes, or panning turns on or off. */
+  readonly version: number
+  /** Centre of the view, in world px. */
+  readonly camera: Vec2
+  /** Nodes currently showing. */
+  readonly count: number
+  /** True once the plant spills past the view; until then it all stays in view and the view stays put. */
+  readonly canPan: boolean
+  /** Skip easing: growth and pans land at once. */
+  readonly still: boolean
+  growth(branchId: string): number
+  isVisible(nodeId: string): boolean
+  /** True while a folder's branch is out, including while it retracts. */
+  isOpen(folderId: string): boolean
+  toggle(folderId: string): void
+  pan(dx: number, dy: number): void
+  /** Let go of a drag: the view glides on at this velocity (world px/s) and slows to a stop. */
+  fling(vx: number, vy: number): void
+  /** The visible area in world px. The trunk enters from its left edge. */
+  setView(width: number, height: number): void
+  step(dt: number): void
+  /** Called when `version` changes. */
+  subscribe(listener: () => void): () => void
+  /** Called after every step, for anything that follows the camera. */
+  onFrame(listener: () => void): () => void
+}
+
+interface Bounds {
+  minX: number
+  maxX: number
+  minY: number
+  maxY: number
+}
+
+export function createGrove(spec: FolderSpec, { still = false } = {}): Grove {
+  const world = layout(spec)
+  const nodes = new Map<string, GroveNode>(world.nodes.map((node) => [node.id, node]))
+  // Children before parents, so a retracting branch sees its children's final growth.
+  const deepestFirst = [...world.branches.values()].reverse()
+  const childFolders = new Map<string, GroveNode[]>()
+  for (const node of world.nodes) {
+    if (node.kind !== 'folder') continue
+    childFolders.set(node.parent, [...(childFolders.get(node.parent) ?? []), node])
+  }
+
+  const growth = new Map<string, number>([...world.branches.keys()].map((id) => [id, 0]))
+  const tweens = new Map<string, { from: number; start: number; duration: number }>()
+  const expanded = new Set<string>([ROOT_ID])
+  const visible = new Set<string>()
+  const openIcons = new Set<string>()
+  const listeners = new Set<() => void>()
+  const frameListeners = new Set<() => void>()
+  let camera: Vec2 = [0, 0]
+  let target: Vec2 = [0, 0]
+  let view: Vec2 = [864, 545]
+  let glide: Vec2 = [0, 0]
+  let focused = ROOT_ID
+  let bounds: Bounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 }
+  let spill = { x: false, y: false }
+  let canPan = false
+  let clock = 0
+  let version = 0
+
+  // The camera never shows where the trunk starts: the plant always enters from the left edge.
+  const leftmost = () => world.branches.get(ROOT_ID)!.focus[0] + TRUNK_TUCK + view[0] / 2
+
+  const focusOn = (id: string): Vec2 => {
+    if (id === ROOT_ID) return [leftmost(), 0]
+    const [x, y] = world.branches.get(id)!.focus
+    // Keep the opened folder itself in view, however the view is shaped.
+    const [fx, fy] = nodes.get(id)!.at
+    const reachX = view[0] / 2 - 48
+    const reachY = view[1] / 2 - 40
+    return [
+      Math.max(leftmost(), Math.min(fx + reachX, Math.max(fx - reachX, x))),
+      Math.min(fy + reachY, Math.max(fy - reachY, y)),
+    ]
+  }
+
+  // Where growth is headed: an open folder's branch grows to its tip, a closed one back to nothing.
+  const intended = (id: string) => (expanded.has(id) ? world.branches.get(id)!.path.length : 0)
+
+  /** What the plant will cover once growth settles, labels included. */
+  const measure = (): Bounds => {
+    const box = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
+    const add = (x: number, y: number) => {
+      box.minX = Math.min(box.minX, x)
+      box.maxX = Math.max(box.maxX, x)
+      box.minY = Math.min(box.minY, y)
+      box.maxY = Math.max(box.maxY, y)
+    }
+    for (const branch of world.branches.values()) {
+      const g = intended(branch.id)
+      const { points, lengths } = branch.path
+      for (let i = 0; i < points.length && lengths[i] <= g; i++) add(points[i][0], points[i][1])
+    }
+    for (const node of world.nodes) {
+      if (intended(node.parent) < node.revealAt) continue
+      const [x, y] = node.at
+      const label = node.name.length * 9
+      if (node.label === 'right') {
+        add(x - 20, y - 20)
+        add(x + 28 + label, y + 20)
+      } else {
+        add(x - Math.max(20, label / 2), y - 20)
+        add(x + Math.max(20, label / 2), y + 44)
+      }
+    }
+    return box
+  }
+
+  /**
+   * Where the camera may sit, per axis. If the plant spills past the view, the
+   * view can roam over it but not off it; if it fits, the view keeps all of it
+   * in sight. Either way the trunk enters from the left edge.
+   */
+  const cameraRange = () => {
+    const [halfW, halfH] = [view[0] / 2, view[1] / 2]
+    const right = bounds.maxX + MARGIN - halfW
+    const top = bounds.minY - MARGIN + halfH
+    const bottom = bounds.maxY + MARGIN - halfH
+    return {
+      x: [leftmost(), Math.max(leftmost(), right)] as const,
+      y: (top <= bottom ? [top, bottom] : [bottom, top]) as readonly [number, number],
+      spills: { x: right > leftmost() + 1, y: top < bottom - 1 },
+    }
+  }
+
+  const within = (value: number, [low, high]: readonly [number, number]) => Math.min(high, Math.max(low, value))
+
+  const panTo = (x: number, y: number): Vec2 => {
+    const range = cameraRange()
+    return [spill.x ? within(x, range.x) : camera[0], spill.y ? within(y, range.y) : camera[1]]
+  }
+
+  // Re-frame whenever what's open or the view changes.
+  const reframe = () => {
+    bounds = measure()
+    const range = cameraRange()
+    spill = range.spills
+    const [x, y] = focusOn(focused)
+    target = [within(x, range.x), within(y, range.y)]
+  }
+
+  reframe()
+  camera = target
+
+  // A closing branch can't retract past a child folder whose branch is still out.
+  const floorOf = (id: string) => {
+    let floor = 0
+    for (const child of childFolders.get(id) ?? []) {
+      if ((growth.get(child.id) ?? 0) > 0) floor = Math.max(floor, child.revealAt)
+    }
+    return floor
+  }
+
+  const refresh = () => {
+    let changed = false
+    for (const node of world.nodes) {
+      const show = (growth.get(node.parent) ?? 0) >= node.revealAt
+      if (show !== visible.has(node.id)) {
+        if (show) visible.add(node.id)
+        else visible.delete(node.id)
+        changed = true
+      }
+      if (node.kind === 'folder') {
+        const open = expanded.has(node.id) || (growth.get(node.id) ?? 0) > 0
+        if (open !== openIcons.has(node.id)) {
+          if (open) openIcons.add(node.id)
+          else openIcons.delete(node.id)
+          changed = true
+        }
+      }
+    }
+    if ((spill.x || spill.y) !== canPan) {
+      canPan = spill.x || spill.y
+      changed = true
+    }
+    if (changed) {
+      version++
+      listeners.forEach((listener) => listener())
+    }
+  }
+
+  return {
+    layout: world,
+    still,
+    get version() {
+      return version
+    },
+    get camera() {
+      return camera
+    },
+    get count() {
+      return visible.size
+    },
+    get canPan() {
+      return canPan
+    },
+    growth: (id) => growth.get(id) ?? 0,
+    isVisible: (id) => visible.has(id),
+    isOpen: (id) => openIcons.has(id),
+
+    toggle(id) {
+      const node = nodes.get(id)
+      if (!node || node.kind !== 'folder') return
+      if (expanded.has(id)) {
+        for (const folder of expanded) {
+          if (folder === id || folder.startsWith(`${id}/`)) expanded.delete(folder)
+        }
+        focused = node.parent
+      } else {
+        for (let at: GroveNode | undefined = node; at; at = nodes.get(at.parent)) expanded.add(at.id)
+        focused = id
+      }
+      reframe()
+      glide = [0, 0]
+      refresh()
+    },
+
+    pan(dx, dy) {
+      glide = [0, 0]
+      if (!canPan) return
+      camera = target = panTo(camera[0] + dx, camera[1] + dy)
+    },
+
+    fling(vx, vy) {
+      glide = still || !canPan ? [0, 0] : [vx, vy]
+    },
+
+    setView(width, height) {
+      view = [width, height]
+      reframe()
+      if (clock === 0) camera = target
+      refresh()
+    },
+
+    step(dt) {
+      clock += dt
+      for (const branch of deepestFirst) {
+        const end = branch.path.length
+        let g = growth.get(branch.id)!
+        if (expanded.has(branch.id)) {
+          if (branch.id === ROOT_ID && clock < INTRO_DELAY && !still) continue
+          if (still) g = end
+          else if (g < end) {
+            let tween = tweens.get(branch.id)
+            if (!tween) {
+              tween = { from: g, start: clock - dt, duration: growTime(end - g) }
+              tweens.set(branch.id, tween)
+            }
+            g = tween.from + (end - tween.from) * easeOut(Math.min(1, (clock - tween.start) / tween.duration))
+          }
+        } else {
+          tweens.delete(branch.id)
+          if (g > 0) {
+            const floor = floorOf(branch.id)
+            g = still ? floor : Math.max(floor, g - RETRACT_SPEED * dt)
+          }
+        }
+        growth.set(branch.id, g)
+      }
+
+      if (glide[0] || glide[1]) {
+        const free: Vec2 = [camera[0] + glide[0] * dt, camera[1] + glide[1] * dt]
+        camera = target = panTo(free[0], free[1])
+        // Hitting an edge stops the glide along that axis.
+        const slow = Math.exp(-FRICTION * dt)
+        glide = [camera[0] === free[0] ? glide[0] * slow : 0, camera[1] === free[1] ? glide[1] * slow : 0]
+        if (Math.hypot(glide[0], glide[1]) < 6) glide = [0, 0]
+      } else {
+        const follow = still ? 1 : 1 - Math.exp(-CAMERA_RATE * dt)
+        camera = [camera[0] + (target[0] - camera[0]) * follow, camera[1] + (target[1] - camera[1]) * follow]
+      }
+
+      refresh()
+      frameListeners.forEach((listener) => listener())
+    },
+
+    subscribe(listener) {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+
+    onFrame(listener) {
+      frameListeners.add(listener)
+      return () => frameListeners.delete(listener)
+    },
+  }
+}

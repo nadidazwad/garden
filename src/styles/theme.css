@@ -1,0 +1,109 @@
+/* Design tokens. Type scale, spacing and easing follow finnolivertaylor.com
+   (reference kept outside the repo, in ~/Projects/azwad-reference); the colours
+   are warmed to sit under a krishnachura in Joishtho.
+   Tailwind's default palette and type scale are cleared so only these exist:
+   text-ink, bg-page, text-copy, font-mondwest, ease-out-expo, ... */
+
+@theme {
+  --color-*: initial;
+  --color-white: #fff;
+  --color-black: #000;
+  --color-page: #f3efe8;
+  --color-panel: #f9f6f0;
+  --color-band: #ece7de;
+  --color-ink: #16130f;
+  --color-ink-strong: #000;
+  --color-kicker: #6b655d;
+  /* 4.6:1 on the page; the reference's grey was 3.3:1. */
+  --color-body: #6f6a63;
+  --color-muted: #a39c92;
+  --color-faint: #c9c1b5;
+  --color-line: #ddd6ca;
+  --color-rule: #d6cec1;
+  --color-edge: #bcb3a5;
+  --color-well: #e8e2d7;
+  --color-pill: #e2dacd;
+  --color-mist: #fffdf9;
+  /* Placeholder until the krishnachura lands and its blooms set the accent. */
+  --color-accent: #2d68ff;
+  --color-plate: #16130f0f;
+  --color-scrim: #8f877c;
+  --color-ink-veil: #16130fb8;
+  --color-line-dark: #544d45;
+
+  --font-sans: 'PP Neue Montreal', 'PP Neue Montreal Fallback', ui-sans-serif, system-ui, sans-serif;
+  --font-mondwest: 'PP Mondwest', 'PP Mondwest Fallback', ui-serif, serif;
+  --font-bit: 'PP NeueBit', 'PP NeueBit Fallback', ui-monospace, monospace;
+
+  --text-*: initial;
+  --text-display: 84px;
+  --text-display--line-height: 98px;
+  --text-headline: 42px;
+  --text-headline--line-height: 45px;
+  --text-headline-sm: 30px;
+  --text-headline-sm--line-height: 34px;
+  --text-title: 35px;
+  --text-title--line-height: 40px;
+  --text-heading: 24px;
+  --text-heading--line-height: 30px;
+  --text-lead: 18px;
+  --text-lead--line-height: 25px;
+  --text-nav: 17px;
+  --text-nav--line-height: 24px;
+  --text-copy: 16px;
+  --text-copy--line-height: 25px;
+  --text-copy-tight: 16px;
+  --text-copy-tight--line-height: 22px;
+  --text-small: 14px;
+  --text-small--line-height: 20px;
+  --text-meta: 13px;
+  --text-meta--line-height: 25px;
+  --text-label: 13px;
+  --text-label--line-height: 17px;
+  --text-caption: 12px;
+  --text-caption--line-height: 18px;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-soft: cubic-bezier(0.45, 0.05, 0.12, 1);
+
+  /* A node popping into the plant: swells past full size, then settles. */
+  --animate-pop: pop 320ms ease-out both;
+
+  @keyframes pop {
+    0% {
+      scale: 0.5;
+      opacity: 0;
+    }
+    40% {
+      scale: 1.18;
+      opacity: 1;
+    }
+    70% {
+      scale: 0.97;
+    }
+    100% {
+      scale: 1;
+    }
+  }
+
+  --shadow-media: 0 1px 7px rgb(0 0 0 / 0.45);
+  --shadow-pill: 1px 1px 2px rgb(0 0 0 / 0.1);
+  --drop-shadow-pixel: 0 2.5px 5.81px rgb(0 0 0 / 0.25);
+}
+
+@layer base {
+  html {
+    min-width: 360px;
+    background-color: var(--color-page);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-white);
+  }
+}
