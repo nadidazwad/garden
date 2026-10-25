@@ -1,6 +1,6 @@
 // The fonts are licensed to the site, not to everyone who clones this public repo, so
 // they live in a private one and a build pulls whatever public/fonts/ is missing.
-// FONTS_TOKEN: a GitHub token that can read FONTS_REPO's contents (set it in Vercel).
+// FONTS_TOKEN (FONT_TOKEN works too): a GitHub token that can read FONTS_REPO's contents (set it in Vercel).
 // Without one, a local build goes ahead on fallback fonts; a Vercel build stops.
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 
@@ -15,9 +15,12 @@ for (const file of files) {
 }
 if (!missing.length) process.exit(0)
 
-const token = process.env.FONTS_TOKEN
+const token = process.env.FONTS_TOKEN || process.env.FONT_TOKEN
 if (!token) {
-  console.warn(`fonts: missing ${missing.join(', ')}. Put them in public/fonts/, or set FONTS_TOKEN to pull them from ${REPO}.`)
+  // Names only, never values: enough to spot a typo or a variable scoped to another environment.
+  const near = Object.keys(process.env).filter((name) => /font/i.test(name))
+  const seen = near.length ? `This build sees ${near.join(', ')}.` : `No font variable reached this build${process.env.VERCEL_ENV ? ` (${process.env.VERCEL_ENV})` : ''}.`
+  console.warn(`fonts: missing ${missing.join(', ')}. Put them in public/fonts/, or set FONTS_TOKEN to pull them from ${REPO}. ${seen}`)
   process.exit(process.env.VERCEL ? 1 : 0)
 }
 
