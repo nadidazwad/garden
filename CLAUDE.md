@@ -1,6 +1,6 @@
 # azwad
 
-Nadid Azwad's portfolio: a file tree that grows as a dithered plant. Peers first, then hiring teams, then clients. The repo is public: code is MIT, the work it shows is not. Vite + React 19 + TypeScript, three.js via `@react-three/fiber` + `@react-three/drei`, Tailwind v4. Hosted on Vercel (static Vite build, no config needed yet).
+Nadid Azwad's portfolio: a file tree that grows as a dithered plant. Peers first, then hiring teams, then clients. The repo is public: code is MIT, the work it shows is not. Vite + React 19 + TypeScript, three.js via `@react-three/fiber`, Tailwind v4. Hosted on Vercel, deployed from GitHub: a static Vite build, with `vercel.json` sending page paths to `index.html` so a case study's URL reloads.
 
 ## Map
 - `src/app/App.tsx`: root component; renders the garden.
@@ -10,7 +10,8 @@ Nadid Azwad's portfolio: a file tree that grows as a dithered plant. Peers first
 - `src/scene/`: everything three.js. `<Scene grove scale dpr />` draws the plant (lit tubes + instanced leaves) and runs the dither pass; it also steps the grove each frame, so labels and pixels move together. Lazy-loaded so three stays out of the main bundle.
 - `src/icons/`: pixel glyphs (folders, file kinds, the hello folder) on the dither grid. Drawn for this project; never use the reference's.
 - `src/styles/theme.css`: design tokens (colours, type scale, easing, shadows) as a Tailwind `@theme`. The default Tailwind palette and text sizes are cleared, so use these tokens (`text-ink`, `text-copy`, `font-mondwest`) or arbitrary values.
-- `src/styles/fonts.css` + `public/fonts/`: PP Neue Montreal (default sans), PP Mondwest (display), PP NeueBit. One weight each. The font files are git-ignored (Pangram's licence covers the site, not redistribution); builds pull them in.
+- `src/styles/fonts.css` + `public/fonts/`: PP Neue Montreal (default sans), PP Mondwest (display), PP NeueBit. One weight each. The font files are git-ignored (Pangram's licence covers the site, not redistribution); `pnpm build` runs `scripts/fonts.mjs`, which pulls missing ones from the private `nadidazwad/garden-fonts` repo when `FONTS_TOKEN` is set (Vercel has it in its environment variables).
+- `~/Projects/azwad-assets/` (outside the repo): the media pipeline. `tools/shoots/` films the live sites frame by frame, `tools/compose.py` adds the camera moves and pointer, `tools/publish.py` encodes everything into `public/media/` and writes the sizes to `media.json`.
 - `~/Projects/azwad-reference/` (outside the repo): finnolivertaylor.com's typography, spacing, layouts, icons and screenshots (its README is the index), plus the plant concept video. Reference only: never ship or commit any of it.
 
 ## Commands
@@ -23,7 +24,7 @@ Nadid Azwad's portfolio: a file tree that grows as a dithered plant. Peers first
 - Typography and layout follow the reference site's values; the site's behaviour follows Azwad's own brief.
 - Emphasis comes from colour (grey `body` text with `ink`/`accent` phrases), not weight. Each font has only one weight.
 - The plant, icons and labels share one pixel grid (`CELL` in `src/grove/view.ts`). The dither pattern is locked to the world and the picture slides by whole device pixels; don't snap the camera to cells (pans stutter) or dither in screen space (pans shimmer).
-- Media (stills, films) never goes in git: it lives in R2.
+- Media (stills, films) lives in `public/media/` and is committed; Vercel serves it with the site. Every re-encode stays in git history, so publish sparingly and keep films under ~25 MB.
 - Adding, renaming or removing an entry in `tree.ts` means placing it in `phone.json` too (`pnpm test` names what's missing).
 - Everything on the site is in English, with no Bangla script; Bangla titles are romanised with an English gloss.
 - No tilted or rotated text.

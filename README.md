@@ -9,10 +9,10 @@ pnpm build    # typecheck + production build to dist/
 pnpm test     # vitest
 ```
 
-The fonts (PP Neue Montreal, PP Mondwest, PP NeueBit from Pangram Pangram) aren't in the repo. Put your own copies in `public/fonts/` to run it locally.
+The fonts (PP Neue Montreal, PP Mondwest, PP NeueBit from Pangram Pangram) aren't in the repo. Put your own copies in `public/fonts/` to run it locally; without them it falls back to system fonts.
 
 ## Licence
 
-The code is MIT. The work it shows (case studies, screenshots, films, captions) is not: it's © Nadid Azwad and the clients it was made for, all rights reserved.
+The code is MIT. The work it shows is not: the case studies and other writing in `src/portfolio/writing/`, the captions in `src/portfolio/tree.ts`, and the screenshots and films in `public/media/` are © Nadid Azwad and the clients they were made for, all rights reserved.
 
 Type and layout after [Finn Oliver Taylor](https://finnolivertaylor.com).
