@@ -10,7 +10,7 @@ QuickHajj plans Hajj and Umrah journeys from Dhaka. I design and build its websi
 
 For version two I made:
 
-- **Website** Packages, enquiries and a blog. ![The live homepage](/work/quickhajj/four-versions/v2-live.png)
+- **Website** Packages, enquiries and a blog. ![The live homepage](/work/quickhajj/two-versions/v2-live.png)
 - **Bangla site** Its own copy and its own pages under /bn. ![The Bangla homepage](/work/quickhajj/case-study/bangla.png)
 - **Umrah campaign** A poster for newlyweds, in English. ![My English poster beside a colleague's Bangla one](/work/quickhajj/umrah-campaign.png)
 - **Enquiry form** Short, hard to spam, with WhatsApp to fall back on. ![The enquiry form](/work/quickhajj/case-study/enquiry.png)
@@ -36,7 +36,7 @@ I started again from an empty project and wrote the design system before the pag
 The proof is the kind you can check. The licence number sits right under the headline. There are no made-up testimonials, numbers or experts, and if we couldn't back a claim, it stayed off the page. The main button books a consultation, not a package.
 
 :::compare
-Home: ![Version one](/work/quickhajj/four-versions/v1.png) ![Version two](/work/quickhajj/four-versions/v2-live.png)
+Home: ![Version one](/work/quickhajj/two-versions/v1.png) ![Version two](/work/quickhajj/two-versions/v2-live.png)
 :::
 
 ## Bangla.

@@ -9,7 +9,7 @@ import howThisGrew from './writing/how-this-grew.md?raw'
 // The portfolio as a file tree. World px, y down; the opening view spans
 // x -432 to 848 and stands on the ground. A folder's branch grows out of the
 // folder itself, so its path lists the points after the folder's mouth.
-// The trunk, work/, quickhajj/, four-versions/, fun/ and nahwan-os/ follow
+// The trunk, work/, quickhajj/, two-versions/, fun/ and nahwan-os/ follow
 // the plant concept recording point for point; the rest is drawn by hand to
 // match. Nothing may grow into the intro or the time; branches may cross the
 // name on the ground, which tucks itself away while they do.
@@ -90,7 +90,7 @@ export const portfolio: FolderSpec<Entry> = {
           [
             file('case-study.md', [110, -94], 'right', { kind: 'case', body: quickhajj }),
             folder(
-              'four-versions',
+              'two-versions',
               [321, -202],
               'right',
               {
