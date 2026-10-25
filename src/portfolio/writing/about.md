@@ -1,4 +1,4 @@
-I'm **Nadid Azwad**, a designer and engineer in Dhaka, studying **{programme}** at **{university}**.
+I'm **Nadid Azwad**, a designer and engineer in Dhaka, studying **CSE** at **North South University**.
 
 I design and build **websites, products and short films**, mostly for businesses here: a Hajj agency, a publishing house, a startup selling over Messenger.
 
