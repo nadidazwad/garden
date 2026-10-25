@@ -53,11 +53,9 @@ function Plot({ layout, viewport }: { layout: Layout; viewport: Viewport }) {
     grove.pan((event.deltaX * unit) / scale, (event.deltaY * unit) / scale)
   }
 
+  // A link node is a real link (see Nodes), so the browser opens its tab; this only sounds it.
   const open = (node: GroveNode<Entry>) => {
-    if (node.data?.kind === 'link') {
-      sound.play('link')
-      window.open(node.data.href, '_blank', 'noopener')
-    }
+    if (node.data?.kind === 'link') sound.play('link')
     else if (grove.location === node.id) grove.close(node.id)
     else grove.open(node.id)
   }

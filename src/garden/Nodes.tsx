@@ -96,7 +96,7 @@ function File({ node, shown, here, onOpen }: { node: GroveNode<Entry>; shown: bo
       glyph={glyphFor(entry)}
       onClick={onOpen}
       current={here}
-      link={link}
+      href={entry?.kind === 'link' ? entry.href : undefined}
       iconClass={link ? 'text-accent' : `${here ? 'text-accent' : 'text-faint'} ${HOVER}`}
       // Links are somewhere to go, so they stand out in the accent; hovering draws a line under them.
       nameClass={link ? 'text-accent' : `${here ? 'text-ink' : 'text-body'} ${HOVER}`}
@@ -129,8 +129,8 @@ interface ItemProps {
   note?: string
   iconClass: string
   nameClass: string
-  /** Opens a new tab: an arrow follows the name and nudges toward where it goes. */
-  link?: boolean
+  /** Somewhere else: it's a real link to a new tab, and an arrow follows the name, nudging toward where it goes. */
+  href?: string
   expanded?: boolean
   current?: boolean
   onClick: () => void
@@ -148,7 +148,7 @@ const SPROUT: Record<LabelSide, string> = {
  * right, the left, or underneath. The whole thing is one button, as big as the icon.
  * Arriving, the icon pops and the name grows out of it a beat later.
  */
-function Item({ node, shown, glyph, name, note, iconClass, nameClass, link, expanded, current, onClick }: ItemProps) {
+function Item({ node, shown, glyph, name, note, iconClass, nameClass, href, expanded, current, onClick }: ItemProps) {
   const { width, height } = glyphs[glyph]
   const px = (n: number) => `calc(var(--px) * ${n})`
   const gap = 'calc(var(--spacing) * 8)'
@@ -160,11 +160,15 @@ function Item({ node, shown, glyph, name, note, iconClass, nameClass, link, expa
         ? { right: `calc(100% + ${gap})`, top: '50%', transform: 'translateY(-50%)', textAlign: 'right' }
         : { left: '50%', top: 'calc(100% + var(--spacing) * 4)', transform: 'translateX(-50%)', textAlign: 'center' }
   const nudge = 'calc(var(--spacing) * 2)'
+  const link = href !== undefined
+  // A link is an anchor, so the browser opens the tab itself: no popup blocker stops it, and a
+  // modifier or middle click works as anywhere else. Everything else is a button.
+  const Tag = link ? 'a' : 'button'
+  const kind = link ? { href, target: '_blank', rel: 'noreferrer', draggable: false } : { type: 'button' as const, 'aria-expanded': expanded }
   return (
-    <button
-      type="button"
+    <Tag
+      {...kind}
       role="treeitem"
-      aria-expanded={expanded}
       aria-current={current || undefined}
       onClick={onClick}
       // A mouse passing over gets the faintest tick; a finger has already touched it.
@@ -195,6 +199,6 @@ function Item({ node, shown, glyph, name, note, iconClass, nameClass, link, expa
         </span>
         {note && <span className={NOTE}>{note}</span>}
       </span>
-    </button>
+    </Tag>
   )
 }
