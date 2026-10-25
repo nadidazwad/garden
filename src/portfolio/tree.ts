@@ -109,27 +109,15 @@ export const portfolio: FolderSpec<Entry> = {
                 ],
               },
               [
-                file('v1.png', [322, -280], 'left', {
+                file('v1.png', [680, -386], 'right', {
                   kind: 'image',
-                  caption: 'Version one, September 2025.',
-                  meta: 'quick-hajj.vercel.app',
-                  alt: 'The first QuickHajj homepage',
-                }),
-                file('v2-reimagined.png', [680, -386], 'right', {
-                  kind: 'image',
-                  caption: 'Reimagined, late 2025.',
-                  meta: 'quickhajj-reimagined.vercel.app',
-                  alt: 'The second QuickHajj homepage',
-                }),
-                file('v3-remastered.png', [870, -424], 'right', {
-                  kind: 'image',
-                  caption: 'Remastered, summer 2026.',
+                  caption: 'Version one, November 2025 to July 2026.',
                   meta: 'quickhajj-remastered.vercel.app',
-                  alt: 'The third QuickHajj homepage',
+                  alt: 'The earlier QuickHajj homepage',
                 }),
-                file('v4-live.png', [1090, -500], 'right', {
+                file('v2-live.png', [870, -424], 'right', {
                   kind: 'image',
-                  caption: 'The one that’s live now.',
+                  caption: 'Version two, the one that’s live now.',
                   meta: 'quickhajj.com',
                   alt: 'The current QuickHajj homepage',
                 }),
@@ -137,15 +125,14 @@ export const portfolio: FolderSpec<Entry> = {
             ),
             file('umrah-campaign.png', [290, -110], 'right', {
               kind: 'image',
-              caption: 'Posters for a first-time Umrah campaign, in English and Bangla.',
+              caption: 'Posters for Umrah as a couple’s first journey after the wedding, in English and Bangla.',
               meta: 'QuickHajj · 2026',
               alt: 'Umrah campaign posters in English and Bangla, side by side',
             }),
-            file('home.png', [503, -121], 'right', {
-              kind: 'image',
+            file('home.mp4', [503, -121], 'right', {
+              kind: 'video',
               caption: 'The homepage, in English and Bangla.',
               meta: 'QuickHajj · 2026',
-              alt: 'The QuickHajj homepage in English and in Bangla, side by side',
             }),
             file('quickhajj.com', [600, -170], 'right', link('https://www.quickhajj.com')),
           ],
@@ -164,11 +151,10 @@ export const portfolio: FolderSpec<Entry> = {
           },
           [
             file('case-study.md', [478, -486], 'right', { kind: 'case', body: attar }),
-            file('storefront.png', [640, -516], 'right', {
-              kind: 'image',
+            file('storefront.mp4', [640, -516], 'right', {
+              kind: 'video',
               caption: 'The storefront: cash on delivery, bKash and Nagad, in a shop that sets up for free.',
               meta: 'Attar · 2026 · product, design & code',
-              alt: 'The Attar perfume storefront',
             }),
             file('admin.png', [800, -536], 'right', {
               kind: 'image',
@@ -194,11 +180,10 @@ export const portfolio: FolderSpec<Entry> = {
           },
           [
             file('case-study.md', [366, -600], 'right', { kind: 'case', body: stableconverse }),
-            file('landing.png', [430, -650], 'right', {
-              kind: 'image',
+            file('landing.mp4', [430, -650], 'right', {
+              kind: 'video',
               caption: 'The landing page.',
               meta: 'StableConverse · 2026 · founding design engineer',
-              alt: 'The StableConverse landing page',
             }),
             file('stableconverse.com', [452, -748], 'left', link('https://stableconverse.com')),
             folder(
@@ -319,7 +304,7 @@ export const portfolio: FolderSpec<Entry> = {
       },
       [
         file('grand-theft-pokemon', [106, 118], 'left', link('https://bup-accounting.vercel.app')),
-        file('assignment-cover-generator', [60, 196], 'below', link('https://assignmentcovergenerator.vercel.app')),
+        file('grow-your-repo', [60, 196], 'below', link('https://grow-your-repo.vercel.app')),
         folder(
           'nahwan-os',
           [434, 195],
@@ -367,18 +352,16 @@ export const portfolio: FolderSpec<Entry> = {
             limbs: [[[730, 246], [744, 274], [742, 300]]],
           },
           [
-            file('tonsore.png', [700, 200], 'right', {
-              kind: 'image',
+            file('tonsore.mp4', [700, 200], 'right', {
+              kind: 'video',
               caption: 'A redesign for a Dhaka barbershop. They didn’t ask.',
               meta: 'Tonsore · 2026',
-              alt: 'A redesigned website for Tonsore',
               link: { label: 'tonsorebd.vercel.app', href: 'https://tonsorebd.vercel.app' },
             }),
-            file('grippermark-labs.png', [918, 306], 'right', {
-              kind: 'image',
+            file('grippermark-labs.mp4', [918, 306], 'right', {
+              kind: 'video',
               caption: 'My studio site, from when I was dressing up as an agency.',
               meta: 'GripperMark Labs · 2026',
-              alt: 'The GripperMark Labs website',
               link: { label: 'labs.grippermark.com', href: 'https://labs.grippermark.com' },
             }),
           ],

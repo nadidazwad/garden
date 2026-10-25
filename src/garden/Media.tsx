@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react'
 import { PixelIcon, type GlyphName } from '../icons'
-import { stillUrl } from '../portfolio'
+import { filmUrl, posterUrl, stillUrl } from '../portfolio'
 
 interface StillProps {
   /** The still's path in the tree, or a case study's own media path. */
@@ -21,6 +21,29 @@ export function Still({ path, alt, className = '', style, lazy }: StillProps) {
       alt={alt}
       loading={lazy ? 'lazy' : undefined}
       onError={() => setMissing(true)}
+      className={`block bg-well object-cover ${className}`}
+      style={style}
+    />
+  )
+}
+
+/** A silent screen recording that loops like a moving still; with reduced motion it waits on its poster. */
+export function Loop({ path, label, className = '', style }: { path: string; label: string; className?: string; style?: CSSProperties }) {
+  const [missing, setMissing] = useState(false)
+  if (missing) return <Placeholder glyph="film" label={label} className={className} style={style} />
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches
+  return (
+    <video
+      src={filmUrl(path)}
+      poster={posterUrl(path)}
+      aria-label={label}
+      onError={() => setMissing(true)}
+      autoPlay={!still}
+      controls={still}
+      muted
+      loop
+      playsInline
+      preload="metadata"
       className={`block bg-well object-cover ${className}`}
       style={style}
     />

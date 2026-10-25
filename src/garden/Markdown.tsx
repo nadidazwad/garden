@@ -1,10 +1,11 @@
 import { Fragment, type ReactNode } from 'react'
 import { aspect } from '../portfolio'
-import { Still } from './Media.tsx'
+import { Loop, Still } from './Media.tsx'
 
 // Just enough Markdown for this site's writing. Emphasis is colour, never
 // weight: **phrase** turns ink, _phrase_ steps back to muted, links are accent.
 // An image on a line of its own is a figure; its src is a media path, not a URL.
+// A `.mp4` path plays as a silent loop.
 
 export type Block =
   | { kind: 'heading'; level: 1 | 2 | 3; text: string }
@@ -112,9 +113,14 @@ export function Figure({
   captionClass?: string
   imageClass?: string
 }) {
+  const media = { className: `w-full ${imageClass}`, style: { aspectRatio: aspect(block.src) } }
   return (
     <figure className={className}>
-      <Still path={block.src} alt={block.alt} lazy className={`w-full ${imageClass}`} style={{ aspectRatio: aspect(block.src) }} />
+      {/\.mp4$/i.test(block.src) ? (
+        <Loop path={block.src} label={block.alt} {...media} />
+      ) : (
+        <Still path={block.src} alt={block.alt} lazy {...media} />
+      )}
       {block.caption && <figcaption className={captionClass}>{inline(block.caption)}</figcaption>}
     </figure>
   )

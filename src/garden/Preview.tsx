@@ -98,7 +98,7 @@ export function Preview({ node, width, height, leaving, onClose, onGone }: Props
             <p className="text-copy-tight text-ink">{entry.caption}</p>
             <p className="flex flex-wrap gap-x-12 text-meta text-muted">
               {entry.meta && <span>{entry.meta}</span>}
-              {entry.kind === 'image' && entry.link && (
+              {(entry.kind === 'image' || entry.kind === 'video') && entry.link && (
                 <a href={entry.link.href} target="_blank" rel="noreferrer" className="text-accent hover:underline">
                   {entry.link.label} ↗
                 </a>

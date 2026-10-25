@@ -13,7 +13,7 @@ export type Entry =
       note?: string
     }
   | { kind: 'image'; caption: string; meta?: string; alt: string; link?: Link }
-  | { kind: 'video'; caption: string; meta?: string }
+  | { kind: 'video'; caption: string; meta?: string; link?: Link }
   | { kind: 'text'; body: string }
   /** A case study, written in Markdown. */
   | { kind: 'case'; body: string }
