@@ -1,14 +1,33 @@
+Product, design & code · 2026
+
 # A perfume shop anyone can run for free
 
 Attar is an **open-source perfume shop**: a storefront, an admin and deploy guides that cost nothing to run. It's built for shops that **confirm every order by phone** and take cash on delivery, bKash or Nagad. The demo gives **every visitor a private copy** of the store to try.
 
-![The Attar storefront](/work/attar/storefront.mp4 "The storefront, stocked with fictional brands.")
+![The Attar storefront](/work/attar/storefront.mp4)
 
-## Background.
+## Deliverables
 
-Plenty of shops here sell like this. An order comes in, someone calls the customer to confirm it, and the parcel goes out cash on delivery, or the customer sends the money by bKash and types in the transaction ID. Shop templates usually assume the opposite: customer accounts, card checkout and a payment gateway.
+Attar is one repo with everything a small shop needs:
 
-I wanted a template a small perfume or attar seller could fork, rebrand from one file and deploy for nothing. It also had to be easy for an AI agent to change, since that's how a lot of shop owners would customise it.
+- **Storefront** Browse, filter and check out with a phone number. ![The storefront](/work/attar/storefront.mp4)
+- **Admin** An order queue built around the confirmation call. ![The admin](/work/attar/admin.png)
+- **Demo sandbox** A private copy of the whole store for every visitor. ![Starting a demo store](/work/attar/case-study/demo-start.png)
+- **Phone shop** A tab bar, sheets and swipeable photos on phones. ![The shop on a phone](/work/attar/case-study/mobile-home.png)
+- **Deploy guides** Vercel with Neon, or Docker, for nothing.
+- **Setup service** I set it up for shops that would rather not code.
+
+## Problem.
+
+Plenty of shops here sell in a way shop templates don't expect. I kept three threads in mind.
+
+> **Every order gets a call:** An order comes in, someone calls the customer to confirm it, and only then does the parcel go out.
+> **No cards, no gateway:** Customers pay cash on delivery, or send the money by bKash and type in the transaction ID. Templates usually assume customer accounts, card checkout and a payment gateway.
+> **Agents will change it:** A lot of shop owners would customise it with an AI agent, so the code had to be easy for one to change.
+
+## Solution.
+
+So I built a template a small perfume or attar seller could fork, rebrand from one file and deploy for nothing.
 
 ## Storefront.
 
@@ -22,7 +41,11 @@ I designed the admin first, and its look became the system the storefront follow
 
 It's built around the confirmation call. Orders waiting for a call come first. Each order has a status timeline, a call log, notes, payment checks and courier details. A switch blocks customers who place fake orders, and new orders ping the team on Telegram or by email.
 
-![The Attar admin](/work/attar/admin.png "The admin, with the call queue first.")
+:::strip
+![Product listing with perfume filters](/work/attar/case-study/listing.png) ![A product page](/work/attar/case-study/product.png) ![A product's notes pyramid](/work/attar/case-study/product-notes.png) ![Search suggestions](/work/attar/case-study/search-suggest.png) ![Checkout: name, phone and address](/work/attar/case-study/checkout.png) ![Order confirmed](/work/attar/case-study/order-confirmed.png)
+![An order, with its call log and payment](/work/attar/case-study/order-detail.png) ![The order queue](/work/attar/case-study/orders.png) ![The product editor](/work/attar/case-study/product-editor.png) ![Homepage sections, drag to reorder](/work/attar/case-study/homepage.png) ![Coupons](/work/attar/case-study/coupons.png) ![Review moderation](/work/attar/case-study/reviews.png)
+![The home page on a phone](/work/attar/case-study/mobile-home.png) ![A listing on a phone](/work/attar/case-study/mobile-listing.png) ![A product on a phone](/work/attar/case-study/mobile-product.png) ![Filters as a sheet](/work/attar/case-study/mobile-filters.png) ![The phone menu](/work/attar/case-study/mobile-menu.png) ![An order in the admin, on a phone](/work/attar/case-study/mobile-order-detail.png) ![The order queue on a phone](/work/attar/case-study/mobile-orders.png)
+:::
 
 ## Demo.
 
@@ -39,3 +62,11 @@ Attar is MIT-licensed on [GitHub](https://github.com/nadidazwad/nextjs-perfume-s
 Shop owners who'd rather not touch code can ask me to set it up for them, with their brand, products, delivery charges, bKash and Nagad numbers and their own domain. The request form is on the [demo](https://nextjs-perfume-store.vercel.app/get-your-store), and there's no payment until we've talked.
 
 {How many shops have asked so far, and what came of it.}
+
+##
+
+**From fork to first order, in numbers.** They come from the repo's own checks and the demo's limits.
+
+| 95 | Lighthouse mobile. | Home, listing and product pages. |
+| 50 | Sandboxes at once. | Two hours each, a Postgres schema apiece. |
+| 0 | Taka to run. | With Docker on a free VM. Vercel's free tier is for trying it. |

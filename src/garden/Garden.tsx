@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties, type WheelEvent } from 'react'
 import { createGrove, type Grove, type GroveNode } from '../grove'
 import { GROUND, INTRO, opensAs, portfolio, TIME, type Entry } from '../portfolio'
-import { CaseStudy } from './CaseStudy.tsx'
+import { CaseStudy } from './case/CaseStudy.tsx'
 import { Contact } from './Contact.tsx'
 import { labelArea } from './labels.ts'
 import { Masthead } from './Masthead.tsx'

@@ -1,8 +1,20 @@
+Design & code @ QuickHajj · 2025–26
+
 # The second QuickHajj is the quiet one
 
 QuickHajj plans Hajj and Umrah journeys from Dhaka. I design and build its website. The one live now at [quickhajj.com](https://www.quickhajj.com) replaced a **louder first version**, and its Bangla is **written, not translated**.
 
-![The QuickHajj homepage in English and in Bangla](/work/quickhajj/home.mp4 "The homepage, in English and Bangla.")
+![The QuickHajj homepage in English and in Bangla](/work/quickhajj/home.mp4)
+
+## Deliverables
+
+For version two I made:
+
+- **Website** Packages, enquiries and a blog. ![The live homepage](/work/quickhajj/four-versions/v2-live.png)
+- **Bangla site** Its own copy and its own pages under /bn.
+- **Design system** The rules the site and its artwork follow.
+- **Umrah campaign** Posters for couples, in both languages. ![The Umrah campaign posters](/work/quickhajj/umrah-campaign.png)
+- **Enquiry form** Short, hard to spam, with WhatsApp to fall back on.
 
 ## Background.
 
@@ -10,22 +22,23 @@ QuickHajj is an initiative of Karol Travels International, a government-listed H
 
 So the site has one job. A visitor should finish reading and think, **"they seem trustworthy, let's book a consultation."** Both versions were a try at that sentence.
 
-## Versions.
-
-- **Version one, November 2025 to July 2026.** Smooth scrolling, a glass header, a gold serif logo over a full-bleed photo of the Kaaba, and from June, a Bangla translation.
-- **Version two, live since August 2026.** I started again from an empty project and wrote the design system before the pages.
-
-![The earlier QuickHajj homepage](/work/quickhajj/four-versions/v1.png "Version one.")
-
 ## Problem.
 
-Looking back, version one was trying to look premium. Gold, glass, motion on everything. A family choosing a Hajj agency isn't checking for premium. They want to know the agency is real, what they're paying for, and who picks up the phone.
+Looking back, version one was trying to look premium. For version two I kept three threads in mind.
 
-## Approach.
+> **Premium isn't trust:** Version one had smooth scrolling, a glass header, and a gold serif logo over a full-bleed photo of the Kaaba. A family choosing a Hajj agency isn't checking for any of that.
+> **Proof over promises:** They want to know the agency is real, what they're paying for, and who picks up the phone.
+> **Two languages:** Version one added Bangla as a translation. Bangla readers deserved copy written for them.
 
-The live site's design system starts from one line: **calm, editorial and evidence-led**. A white page, near-black type, thin dividers, and one warm yellow kept for buttons, selections and the frame around the artwork. Large, light headings. Short paragraphs.
+## Solution.
+
+I started again from an empty project and wrote the design system before the pages. It starts from one line: **calm, editorial and evidence-led**. A white page, near-black type, thin dividers, and one warm yellow kept for buttons, selections and the frame around the artwork.
 
 The proof is the kind you can check. The licence number sits right under the headline. There are no made-up testimonials, numbers or experts, and if we couldn't back a claim, it stayed off the page. The main button books a consultation, not a package.
+
+:::compare
+Home: ![Version one](/work/quickhajj/four-versions/v1.png) ![Version two](/work/quickhajj/four-versions/v2-live.png)
+:::
 
 ## Bangla.
 
@@ -50,7 +63,7 @@ Most of the work was saying no. I threw out:
 
 The Bangla poster shows a couple holding hands in Madinah, her hands gloved. The English one has them facing Masjid al-Haram, under "The walk after the wedding." On the site the poster takes the place of a decorative minaret, opens full size, and sends you to WhatsApp with the message already written in your language.
 
-![The Umrah campaign posters in English and Bangla](/work/quickhajj/umrah-campaign.png "The English and Bangla posters.")
+![The Umrah campaign posters in English and Bangla](/work/quickhajj/umrah-campaign.png)
 
 ## Outcome.
 

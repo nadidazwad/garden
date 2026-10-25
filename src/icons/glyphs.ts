@@ -139,7 +139,80 @@ const CLOSE = `
 #.....#
 `
 
-export type GlyphName = 'folder' | 'openFolder' | 'text' | 'page' | 'picture' | 'film' | 'link' | 'hello' | 'helloOpen' | 'close'
+const LIST = `
+#.#######
+.........
+#.#######
+.........
+#.#######
+`
+
+const CARDS = `
+###.###
+###.###
+###.###
+.......
+###.###
+###.###
+###.###
+`
+
+const CHEVRONS = `
+..#...#..
+.#.....#.
+#.......#
+.#.....#.
+..#...#..
+`
+
+const FULLSCREEN = `
+###..###
+#......#
+#......#
+........
+........
+#......#
+#......#
+###..###
+`
+
+const ARROW_LEFT = `
+...#.....
+..#......
+.#.......
+#########
+.#.......
+..#......
+...#.....
+`
+
+const ARROW_RIGHT = `
+.....#...
+......#..
+.......#.
+#########
+.......#.
+......#..
+.....#...
+`
+
+export type GlyphName =
+  | 'folder'
+  | 'openFolder'
+  | 'text'
+  | 'page'
+  | 'picture'
+  | 'film'
+  | 'link'
+  | 'hello'
+  | 'helloOpen'
+  | 'close'
+  | 'list'
+  | 'cards'
+  | 'chevrons'
+  | 'fullscreen'
+  | 'arrowLeft'
+  | 'arrowRight'
 
 export interface Glyph {
   /** Size in icon pixels, with room for the shadow so hovering doesn't shift layout. */
@@ -163,6 +236,12 @@ export const glyphs: Record<GlyphName, Glyph> = {
   hello: compile(HELLO),
   helloOpen: compile(HELLO_OPEN),
   close: compile(CLOSE),
+  list: compile(LIST),
+  cards: compile(CARDS),
+  chevrons: compile(CHEVRONS),
+  fullscreen: compile(FULLSCREEN),
+  arrowLeft: compile(ARROW_LEFT),
+  arrowRight: compile(ARROW_RIGHT),
 }
 
 function compile(art: string): Glyph {

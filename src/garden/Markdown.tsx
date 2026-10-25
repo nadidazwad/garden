@@ -1,11 +1,10 @@
 import { Fragment, type ReactNode } from 'react'
 import { aspect } from '../portfolio'
-import { Loop, Still } from './Media.tsx'
+import { Still } from './Media.tsx'
 
 // Just enough Markdown for this site's writing. Emphasis is colour, never
 // weight: **phrase** turns ink, _phrase_ steps back to muted, links are accent.
 // An image on a line of its own is a figure; its src is a media path, not a URL.
-// A `.mp4` path plays as a silent loop.
 
 export type Block =
   | { kind: 'heading'; level: 1 | 2 | 3; text: string }
@@ -76,14 +75,15 @@ export function parse(source: string): Block[] {
 
 const INLINE = /\*\*(.+?)\*\*|_(.+?)_|\[([^\]]+)\]\(([^)]+)\)/g
 
-export function inline(text: string): ReactNode {
+/** `strong` is the colour **phrases** take: ink in running copy, accent where the reference's summaries use it. */
+export function inline(text: string, strong = 'text-ink'): ReactNode {
   const parts: ReactNode[] = []
   let last = 0
   for (const match of text.matchAll(INLINE)) {
     if (match.index > last) parts.push(text.slice(last, match.index))
     const [, ink, quiet, label, href] = match
-    if (ink) parts.push(<span className="text-ink">{inline(ink)}</span>)
-    else if (quiet) parts.push(<span className="text-muted">{inline(quiet)}</span>)
+    if (ink) parts.push(<span className={strong}>{inline(ink, strong)}</span>)
+    else if (quiet) parts.push(<span className="text-muted">{inline(quiet, strong)}</span>)
     else {
       const external = /^https?:/.test(href)
       parts.push(
@@ -102,7 +102,7 @@ export function inline(text: string): ReactNode {
   return parts.map((part, i) => <Fragment key={i}>{part}</Fragment>)
 }
 
-export function Figure({
+function Figure({
   block,
   className,
   captionClass,
@@ -113,14 +113,9 @@ export function Figure({
   captionClass?: string
   imageClass?: string
 }) {
-  const media = { className: `w-full ${imageClass}`, style: { aspectRatio: aspect(block.src) } }
   return (
     <figure className={className}>
-      {/\.mp4$/i.test(block.src) ? (
-        <Loop path={block.src} label={block.alt} {...media} />
-      ) : (
-        <Still path={block.src} alt={block.alt} lazy {...media} />
-      )}
+      <Still path={block.src} alt={block.alt} lazy className={`w-full ${imageClass}`} style={{ aspectRatio: aspect(block.src) }} />
       {block.caption && <figcaption className={captionClass}>{inline(block.caption)}</figcaption>}
     </figure>
   )
