@@ -22,9 +22,11 @@ export default function Garden() {
 }
 
 function Plot({ layout, viewport }: { layout: Layout; viewport: Viewport }) {
+  const { width, height, scale, dpr } = viewport
   const [grove] = useState(() =>
     createGrove(layout.tree, {
       still: matchMedia('(prefers-reduced-motion: reduce)').matches,
+      view: [width / scale, height / scale],
       ground: layout.ground,
       fitWidth: layout.fitWidth,
       headroom: layout.headroom,
@@ -35,7 +37,6 @@ function Plot({ layout, viewport }: { layout: Layout; viewport: Viewport }) {
   useAddress(grove)
   const { masthead } = layout
   const [keepOut] = useState(() => [...grove.layout.nodes.map((node) => labelArea(node)), masthead.intro.box, masthead.time.box])
-  const { width, height, scale, dpr } = viewport
   const view = useMemo(() => ({ width, height, scale, dpr }), [width, height, scale, dpr])
   const drag = useDrag(grove, scale)
   const [contact, setContact] = useState(false)

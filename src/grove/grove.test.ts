@@ -160,6 +160,13 @@ describe('grove', () => {
     expect(bottomEdge(160)).toBeCloseTo(100)
   })
 
+  it('opens already framed for the view it is given, before any frame steps', () => {
+    const grove = createGrove(tree, { ground: 100, view: [1600, 400] })
+    expect(grove.camera[1] + 400 / 2).toBeCloseTo(100)
+    expect(grove.camera[0] - 1600 / 2).toBeGreaterThan(0)
+    expect(grove.camera[0] - 1600 / 2).toBeLessThan(80)
+  })
+
   it('can keep the plant to the width of the view, so the view only moves up and down', () => {
     const grove = createGrove(tree, { ground: 100, fitWidth: true, headroom: 90 })
     grove.setView(160, 120)

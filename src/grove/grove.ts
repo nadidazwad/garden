@@ -67,6 +67,8 @@ export interface Bounds {
 interface Options {
   /** Skip easing: growth and pans land at once. */
   still?: boolean
+  /** The visible area in world px to open on, so the first frame is already framed. */
+  view?: Vec2
   /**
    * World y of the ground the plant stands on. The opening view rests its
    * bottom edge on it, and the view never sinks below it.
@@ -85,7 +87,7 @@ interface Options {
 
 export function createGrove<T>(
   spec: FolderSpec<T>,
-  { still = false, ground, fitWidth = false, headroom = MARGIN, exclusive = false }: Options = {},
+  { still = false, view: openingView = [864, 545], ground, fitWidth = false, headroom = MARGIN, exclusive = false }: Options = {},
 ): Grove<T> {
   const world = layout(spec)
   const nodes = new Map<string, GroveNode<T>>(world.nodes.map((node) => [node.id, node]))
@@ -106,7 +108,7 @@ export function createGrove<T>(
   const frameListeners = new Set<() => void>()
   let camera: Vec2 = [0, 0]
   let target: Vec2 = [0, 0]
-  let view: Vec2 = [864, 545]
+  let view = openingView
   let glide: Vec2 = [0, 0]
   let focused = ROOT_ID
   let location = ROOT_ID
