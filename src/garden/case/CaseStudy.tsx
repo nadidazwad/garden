@@ -57,15 +57,21 @@ export function CaseStudy({ path, kicker, body, next, onClose }: Props) {
   }, [path])
 
   // The page grows out of the middle of the screen, rounding off its corners as it fills.
+  // Two animations: on its own, the grow runs on the compositor and keeps moving while
+  // the page's first paint is still rastering; with the corners in it, it would wait for that.
   useEffect(() => {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    page.current?.animate(
-      [
-        { opacity: 0, borderRadius: '28px', transform: 'scale(0.9) translateY(26px)' },
-        { opacity: 1, borderRadius: '0px', transform: 'none' },
-      ],
-      { duration: 760, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'backwards' },
-    )
+    const element = page.current
+    if (!element || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const timing = { duration: PAGE_IN, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'backwards' } as const
+    element.animate([{ opacity: 0, transform: 'scale(0.9) translateY(26px)' }, { opacity: 1, transform: 'none' }], timing)
+    element.animate([{ borderRadius: '28px' }, { borderRadius: '0px' }], timing)
+  }, [])
+
+  // The edge blur waits for the page to settle: six backdrop filters cost the opening frame more than everything else together.
+  const [grown, setGrown] = useState(() => matchMedia('(prefers-reduced-motion: reduce)').matches)
+  useEffect(() => {
+    const timer = setTimeout(() => setGrown(true), PAGE_IN)
+    return () => clearTimeout(timer)
   }, [])
 
   useEffect(() => {
@@ -94,9 +100,9 @@ export function CaseStudy({ path, kicker, body, next, onClose }: Props) {
         </header>
 
         {doc.hero.length > 0 && (
-          <div className="mt-35 overflow-hidden rounded-[40px] bg-black">
-            <Rows rows={doc.hero} tile="rounded-[40px]" />
-          </div>
+          <Frame>
+            <Rows rows={doc.hero} tile={SCREEN} />
+          </Frame>
         )}
 
         <div className="mt-120 flex flex-col">
@@ -108,7 +114,7 @@ export function CaseStudy({ path, kicker, body, next, onClose }: Props) {
 
       {/* On phones the pills share the copy's column, so the page runs on far enough for them to settle below it. */}
       <div className="h-(--tail) max-sm:h-[calc(var(--tail)+68px)]" style={{ '--tail': `${TAIL}px` } as CSSProperties} />
-      <Blur />
+      {grown && <Blur />}
       {viewing !== null && viewing >= 0 && <Viewer items={pieces} index={viewing} onIndex={setViewing} onClose={() => setViewing(null)} />}
     </div>
   )
@@ -199,7 +205,7 @@ function Breakout({ block, open }: { block: Block; open: (media: Media) => void 
     case 'figure':
       return (
         <Frame>
-          <Rows rows={block.rows} tile="rounded-[20px] border border-[#d2d2d2]" />
+          <Rows rows={block.rows} tile={SCREEN} />
         </Frame>
       )
     case 'compare':
@@ -216,6 +222,9 @@ function Breakout({ block, open }: { block: Block; open: (media: Media) => void 
       return null
   }
 }
+
+/** A screenshot's own hairline, so a light interface keeps its edges on the white mat. */
+const SCREEN = 'rounded-[20px] border border-[#d2d2d2]'
 
 /** The white mat the reference sets screenshots in. */
 function Frame({ children }: { children: ReactNode }) {
@@ -244,8 +253,12 @@ function Rows({ rows, tile }: { rows: Media[][]; tile: string }) {
 }
 
 const BLURS = [0.5, 1, 2, 4, 8, 16]
+const FADE_IN = 'transition-opacity duration-300 ease-out starting:opacity-0'
 
-/** Copy softens out of focus as it nears the bottom edge, on screens wide enough to read it beside. */
+/**
+ * Copy softens out of focus as it nears the bottom edge, on screens wide enough to read it beside.
+ * Each layer fades in by its own opacity: on the wrapper, opacity would cut the layers off from what's behind them.
+ */
 function Blur() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-40 h-89 max-[899px]:hidden">
@@ -254,12 +267,12 @@ function Blur() {
         return (
           <div
             key={blur}
-            className="absolute inset-0"
+            className={`absolute inset-0 ${FADE_IN}`}
             style={{ backdropFilter: `blur(${blur}px)`, WebkitBackdropFilter: `blur(${blur}px)`, maskImage: mask, WebkitMaskImage: mask }}
           />
         )
       })}
-      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-b from-transparent to-white/72" />
+      <div className={`absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-b from-transparent to-white/72 ${FADE_IN}`} />
     </div>
   )
 }
