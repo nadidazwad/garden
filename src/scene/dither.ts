@@ -1,5 +1,6 @@
 import {
   Mesh,
+  NearestFilter,
   OrthographicCamera,
   PlaneGeometry,
   Scene,
@@ -49,33 +50,30 @@ const SUPERSAMPLE = 2
  * The grid is locked to the world, not the screen: the scene is rendered from a
  * camera snapped to whole cells, then slid by the leftover device pixels. Pans
  * stay smooth and the dither pattern never crawls.
+ *
+ * Every device pixel in a cell gets the same colour, so the palette is matched
+ * once per cell, into a texture a cell to a texel, and the screen only looks
+ * its cell up: a few hundred thousand palette searches a frame, not millions.
  */
 export function createDither() {
   const target = new WebGLRenderTarget(1, 1, { samples: 4 })
-  const material = new ShaderMaterial({
+  const cellTarget = new WebGLRenderTarget(1, 1, { minFilter: NearestFilter, magFilter: NearestFilter, generateMipmaps: false })
+  const cellsUniform = { value: new Vector2(1, 1) }
+
+  const dither = new ShaderMaterial({
     depthTest: false,
     depthWrite: false,
     defines: { PALETTE_SIZE: PALETTE.length },
     uniforms: {
       tScene: { value: target.texture },
-      uCells: { value: new Vector2(1, 1) },
-      uCell: { value: 1 },
-      uHeight: { value: 1 },
-      uShift: { value: new Vector2() },
+      uCells: cellsUniform,
       uOrigin: { value: new Vector2() },
       uPalette: { value: PALETTE.map(rgb) },
     },
-    vertexShader: /* glsl */ `
-      void main() {
-        gl_Position = vec4(position.xy, 0.0, 1.0);
-      }
-    `,
+    vertexShader: FULL_SCREEN,
     fragmentShader: /* glsl */ `
       uniform sampler2D tScene;
       uniform vec2 uCells;
-      uniform float uCell;
-      uniform float uHeight;
-      uniform vec2 uShift;
       uniform vec2 uOrigin;
       uniform vec3 uPalette[PALETTE_SIZE];
 
@@ -89,12 +87,16 @@ export function createDither() {
       }
 
       void main() {
-        vec2 cell = floor((vec2(gl_FragCoord.x, uHeight - gl_FragCoord.y) + uShift) / uCell);
+        // One fragment per cell, counted from the top left like the screen's.
+        vec2 cell = vec2(floor(gl_FragCoord.x), uCells.y - 1.0 - floor(gl_FragCoord.y));
         vec2 world = cell + uOrigin;
         // The centre of a cell sits on the corner of its 2×2 texels, so one
         // bilinear fetch averages them.
         vec4 texel = texture2D(tScene, vec2((cell.x + 0.5) / uCells.x, 1.0 - (cell.y + 0.5) / uCells.y));
-        if (texel.a <= bayer4(world)) discard;
+        if (texel.a <= bayer4(world)) {
+          gl_FragColor = vec4(0.0);
+          return;
+        }
 
         vec3 color = texel.rgb / texel.a + (bayer4(world + vec2(2.0, 1.0)) - 0.5) * 0.22;
         vec3 best = uPalette[0];
@@ -111,7 +113,34 @@ export function createDither() {
       }
     `,
   })
-  const quad = new Mesh(new PlaneGeometry(2, 2), material)
+
+  const blit = new ShaderMaterial({
+    depthTest: false,
+    depthWrite: false,
+    uniforms: {
+      tCells: { value: cellTarget.texture },
+      uCells: cellsUniform,
+      uCell: { value: 1 },
+      uHeight: { value: 1 },
+      uShift: { value: new Vector2() },
+    },
+    vertexShader: FULL_SCREEN,
+    fragmentShader: /* glsl */ `
+      uniform sampler2D tCells;
+      uniform vec2 uCells;
+      uniform float uCell;
+      uniform float uHeight;
+      uniform vec2 uShift;
+
+      void main() {
+        vec2 cell = floor((vec2(gl_FragCoord.x, uHeight - gl_FragCoord.y) + uShift) / uCell);
+        // Empty cells come out transparent, so the quad covers the whole canvas and nothing needs clearing first.
+        gl_FragColor = texture2D(tCells, vec2((cell.x + 0.5) / uCells.x, 1.0 - (cell.y + 0.5) / uCells.y));
+      }
+    `,
+  })
+
+  const quad = new Mesh(new PlaneGeometry(2, 2), dither)
   quad.frustumCulled = false
   const screen = new Scene().add(quad)
   const screenCamera = new OrthographicCamera()
@@ -126,27 +155,45 @@ export function createDither() {
       const width = cells.x * SUPERSAMPLE
       const height = cells.y * SUPERSAMPLE
       if (target.width !== width || target.height !== height) target.setSize(width, height)
-      material.uniforms.uCells.value.copy(cells)
-      material.uniforms.uCell.value = cell
-      material.uniforms.uShift.value.copy(shift)
-      material.uniforms.uOrigin.value.copy(origin)
-      material.uniforms.uHeight.value = gl.domElement.height
+      if (cellTarget.width !== cells.x || cellTarget.height !== cells.y) cellTarget.setSize(cells.x, cells.y)
+      cellsUniform.value.copy(cells)
+      dither.uniforms.uOrigin.value.copy(origin)
+      blit.uniforms.uCell.value = cell
+      blit.uniforms.uShift.value.copy(shift)
+      blit.uniforms.uHeight.value = gl.domElement.height
 
+      // Only the scene needs clearing: both passes after it write every pixel they cover.
+      const autoClear = gl.autoClear
+      gl.autoClear = false
       gl.setClearColor(0x000000, 0)
       gl.setRenderTarget(target)
       gl.clear()
       gl.render(scene, camera)
-      gl.setRenderTarget(null)
-      gl.clear()
+
+      quad.material = dither
+      gl.setRenderTarget(cellTarget)
       gl.render(screen, screenCamera)
+
+      quad.material = blit
+      gl.setRenderTarget(null)
+      gl.render(screen, screenCamera)
+      gl.autoClear = autoClear
     },
     dispose() {
       target.dispose()
-      material.dispose()
+      cellTarget.dispose()
+      dither.dispose()
+      blit.dispose()
       quad.geometry.dispose()
     },
   }
 }
+
+const FULL_SCREEN = /* glsl */ `
+  void main() {
+    gl_Position = vec4(position.xy, 0.0, 1.0);
+  }
+`
 
 /** Raw sRGB values: `Color` would convert them to linear. */
 function rgb(hex: string) {

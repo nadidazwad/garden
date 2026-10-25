@@ -10,6 +10,9 @@ import { ratio } from './media.ts'
 import { Tile } from './Tile.tsx'
 import { Viewer } from './Viewer.tsx'
 
+/** How long the page takes to grow in over the plant, in ms. */
+export const PAGE_IN = 760
+
 interface Props {
   /** Where it sits in the tree; a new path starts back at the top. */
   path: string

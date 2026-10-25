@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties, type WheelEvent } from 'react'
 import { createGrove, type Grove, type GroveNode } from '../grove'
 import { opensAs, type Entry, type Layout } from '../portfolio'
-import { CaseStudy } from './case/CaseStudy.tsx'
+import { CaseStudy, PAGE_IN } from './case/CaseStudy.tsx'
 import { Contact } from './Contact.tsx'
 import { labelArea } from './labels.ts'
 import { Masthead } from './Masthead.tsx'
@@ -39,6 +39,7 @@ function Plot({ layout, viewport }: { layout: Layout; viewport: Viewport }) {
   const view = useMemo(() => ({ width, height, scale, dpr }), [width, height, scale, dpr])
   const drag = useDrag(grove, scale)
   const [contact, setContact] = useState(false)
+  const covered = useCovered(grove)
   useEffect(() => grove.setView(width / scale, height / scale), [grove, width, height, scale])
 
   const scroll = (event: WheelEvent<HTMLDivElement>) => {
@@ -65,7 +66,7 @@ function Plot({ layout, viewport }: { layout: Layout; viewport: Viewport }) {
         <Masthead grove={grove} view={view} masthead={masthead} onContact={() => setContact(true)} />
         <div className="pointer-events-none absolute inset-0">
           <Suspense fallback={null}>
-            <Scene grove={grove} keepOut={keepOut} scale={scale} dpr={dpr} />
+            <Scene grove={grove} keepOut={keepOut} scale={scale} dpr={dpr} paused={covered} />
           </Suspense>
         </div>
         <Nodes grove={grove} view={view} onOpen={open} />
@@ -74,6 +75,22 @@ function Plot({ layout, viewport }: { layout: Layout; viewport: Viewport }) {
       <Opened grove={grove} width={width} height={height} narrow={viewport.narrow} />
     </>
   )
+}
+
+/** True once a case study has finished growing in over the plant, until it closes: nothing behind it needs drawing. */
+function useCovered(grove: Grove<Entry>) {
+  const nodes = useMemo(() => new Map(grove.layout.nodes.map((node) => [node.id, node])), [grove])
+  const reading = opensAs(nodes.get(grove.location)?.data) === 'page'
+  const [settled, setSettled] = useState(false)
+  useEffect(() => {
+    if (!reading) return
+    const timer = setTimeout(() => setSettled(true), PAGE_IN)
+    return () => {
+      clearTimeout(timer)
+      setSettled(false)
+    }
+  }, [reading])
+  return reading && settled
 }
 
 /** Whatever file is open: a preview over the plant, or a case study over everything. */

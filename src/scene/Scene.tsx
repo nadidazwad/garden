@@ -13,19 +13,23 @@ interface Props {
   /** CSS px per world px. */
   scale: number
   dpr: number
+  /** Stops drawing, and the grove's clock with it, while something covers the whole plant. */
+  paused?: boolean
 }
 
 // Drives the grove's clock too, so labels and branches move in the same frame.
-export default function Scene({ grove, keepOut, scale, dpr }: Props) {
+export default function Scene({ grove, keepOut, scale, dpr, paused = false }: Props) {
   return (
     <Canvas
       className="!absolute inset-0 [image-rendering:pixelated]"
       // r3f lets its canvas take the pointer; the plant has nothing to point at, and the words under it do.
       style={{ pointerEvents: 'none' }}
       dpr={dpr}
+      frameloop={paused ? 'never' : 'always'}
       linear
       flat
-      gl={{ alpha: true, antialias: false, powerPreference: 'high-performance' }}
+      // The screen only ever gets one flat pass, so it needs no depth or stencil.
+      gl={{ alpha: true, antialias: false, depth: false, stencil: false, powerPreference: 'high-performance' }}
     >
       <Garden grove={grove} keepOut={keepOut} scale={scale} />
     </Canvas>
