@@ -21,7 +21,9 @@ export function Still({ path, alt, className = '', style, lazy }: StillProps) {
       alt={alt}
       loading={lazy ? 'lazy' : undefined}
       onError={() => setMissing(true)}
-      className={`block bg-well object-cover ${className}`}
+      // It develops in once it's arrived, rather than painting in strips.
+      onLoad={(event) => (event.currentTarget.dataset.loaded = '')}
+      className={`block bg-well object-cover motion-safe:opacity-0 motion-safe:transition-opacity motion-safe:duration-300 motion-safe:data-loaded:opacity-100 ${className}`}
       style={style}
     />
   )

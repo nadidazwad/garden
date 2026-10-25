@@ -7,6 +7,7 @@ interface Props extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   pixel?: number
 }
 
+/** A glyph on the pixel grid. Inside a `group` button it lifts on hover and presses flat (see theme.css). */
 export function PixelIcon({ name, pixel, style, ...rest }: Props) {
   const glyph = glyphs[name]
   const size = (n: number) => (pixel ? `${pixel * n}px` : `calc(var(--px) * ${n})`)
@@ -19,9 +20,9 @@ export function PixelIcon({ name, pixel, style, ...rest }: Props) {
       {...rest}
       style={{ width: size(glyph.width), height: size(glyph.height), ...style }}
     >
-      <path d={glyph.fill} className="fill-page" />
-      <path d={glyph.outline} />
-      <path d={glyph.shadow} className="invisible group-hover:visible" />
+      <path d={glyph.fill} className="pixel-glyph fill-page" />
+      <path d={glyph.outline} className="pixel-glyph" />
+      <path d={glyph.shadow} className="pixel-shadow" />
     </svg>
   )
 }

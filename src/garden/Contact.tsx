@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { PixelIcon } from '../icons'
+import { sound } from '../sound'
 
-// Placeholder until the domain is chosen.
-const EMAIL = 'hello@azwad.me'
+const EMAIL = 'nadidazwad@gmail.com'
 
 const WAYS = [
   { label: EMAIL, href: `mailto:${EMAIL}` },
@@ -18,14 +18,30 @@ interface Props {
   pixel: number
 }
 
+/** How far apart the ways rise in, in ms; each rings a note as it arrives. */
+const STAGGER = 55
+/** The hello corner is bottom right, so that's where its sounds come from. */
+const PAN = 0.6
+
 /** The hello folder, pinned to the corner. Opening it lists the ways to reach me. */
 export function Contact({ open, onToggle, pixel }: Props) {
   const root = useRef<HTMLDivElement>(null)
 
+  // Opening knocks and the ways ring in a note at a time as they rise, climbing; shutting knocks lower.
+  const was = useRef(open)
+  useEffect(() => {
+    if (was.current === open) return
+    was.current = open
+    if (!open) return sound.play('close', { pan: PAN })
+    sound.play('open', { pan: PAN })
+    WAYS.forEach((_, rise) => sound.play('sprout', { step: 3 + rise, delay: 0.05 + (rise * STAGGER) / 1000, pan: PAN }))
+  }, [open])
+
   useEffect(() => {
     if (!open) return
     const away = (event: PointerEvent) => {
-      if (!root.current?.contains(event.target as Node)) onToggle(false)
+      const target = event.target as Element
+      if (!root.current?.contains(target) && !target.closest?.('[data-contact-toggle]')) onToggle(false)
     }
     const escape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onToggle(false)
@@ -46,24 +62,28 @@ export function Contact({ open, onToggle, pixel }: Props) {
         aria-hidden={!open}
       >
         {WAYS.map((way, i) => {
-          const order = WAYS.length - 1 - i
+          // They rise in from the bottom one after another, and leave from the top, quicker.
+          const rise = WAYS.length - 1 - i
           return (
             <li
               key={way.href}
-              className="transition-[opacity,translate] duration-300 ease-out-expo"
+              className={`motion-safe:transition-[opacity,translate,filter] ${open ? 'duration-420 ease-out-expo' : 'duration-180 ease-in'}`}
               style={{
                 opacity: open ? 1 : 0,
-                translate: open ? '0 0' : '0 10px',
-                transitionDelay: open ? `${order * 40}ms` : '0ms',
+                translate: open ? '0 0' : '0 8px',
+                filter: open ? 'none' : 'blur(2px)',
+                transitionDelay: open ? `${50 + rise * STAGGER}ms` : `${i * 25}ms`,
               }}
             >
               <a
                 href={way.href}
                 tabIndex={open ? 0 : -1}
                 {...(way.href.startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {})}
+                onPointerEnter={(event) => event.pointerType === 'mouse' && sound.play('hover', { pan: PAN })}
+                onClick={() => sound.play('link', { pan: PAN })}
                 className="halo group flex items-center gap-6 text-small text-ink outline-none transition-colors duration-150 hover:text-accent focus-visible:text-accent"
               >
-                {way.label}
+                <span className="line-draw group-hover:line-drawn group-focus-visible:line-drawn">{way.label}</span>
                 <span className="text-muted transition-[color,translate] duration-200 group-hover:translate-x-2 group-hover:-translate-y-2 group-hover:text-accent">
                   ↗
                 </span>
@@ -85,11 +105,11 @@ export function Contact({ open, onToggle, pixel }: Props) {
         >
           say hello
         </span>
-        <PixelIcon
-          name={open ? 'helloOpen' : 'hello'}
-          pixel={pixel}
-          className={`transition-colors duration-150 group-hover:text-accent group-focus-visible:text-accent ${open ? 'text-accent' : 'text-ink'}`}
-        />
+        {/* Shut, the face on the folder winks at the pointer. */}
+        <span className={`relative block transition-colors duration-150 group-hover:text-accent group-focus-visible:text-accent ${open ? 'text-accent' : 'text-ink'}`}>
+          <PixelIcon name={open ? 'helloOpen' : 'hello'} pixel={pixel} className={`block ${open ? '' : 'group-hover:opacity-0'}`} />
+          {!open && <PixelIcon name="helloWink" pixel={pixel} className="absolute inset-0 opacity-0 group-hover:opacity-100" />}
+        </span>
       </button>
     </div>
   )

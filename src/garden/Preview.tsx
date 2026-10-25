@@ -2,7 +2,9 @@ import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 
 import type { GroveNode } from '../grove'
 import { PixelIcon, type GlyphName } from '../icons'
 import { aspect, filmUrl, posterUrl, type Entry } from '../portfolio'
+import { sound } from '../sound'
 import { Markdown, type MarkdownStyle } from './Markdown.tsx'
+import { playWithSound } from './film.ts'
 import { Placeholder, Still } from './Media.tsx'
 
 interface Props {
@@ -93,16 +95,20 @@ export function Preview({ node, width, height, narrow, leaving, onClose, onGone 
         {entry.kind === 'video' && <Film path={node.id} width={frame.width} height={frame.height} />}
         {entry.kind === 'text' ? (
           <div className="max-h-[min(72vh,640px)] overflow-y-auto px-24 pb-24 pt-6">
-            <Markdown source={entry.body} styles={TEXT} />
+            <div className={reduced ? '' : 'animate-roll [animation-delay:180ms]'}>
+              <Markdown source={entry.body} styles={TEXT} />
+            </div>
           </div>
         ) : (
+          // The words follow the panel out of the file, a beat behind it.
           <div className="flex flex-col gap-2 px-16 pb-14 pt-12">
-            <p className="text-copy-tight text-ink">{entry.caption}</p>
-            <p className="flex flex-wrap gap-x-12 text-meta text-muted">
+            <p className={`text-copy-tight text-ink ${reduced ? '' : 'animate-roll [animation-delay:200ms]'}`}>{entry.caption}</p>
+            <p className={`flex flex-wrap gap-x-12 text-meta text-muted ${reduced ? '' : 'animate-roll [animation-delay:260ms]'}`}>
               {entry.meta && <span>{entry.meta}</span>}
               {(entry.kind === 'image' || entry.kind === 'video') && entry.link && (
-                <a href={entry.link.href} target="_blank" rel="noreferrer" className="text-accent hover:underline">
-                  {entry.link.label} ↗
+                <a href={entry.link.href} target="_blank" rel="noreferrer" className="group text-accent">
+                  <span className="line-draw group-hover:line-drawn group-focus-visible:line-drawn">{entry.link.label}</span>{' '}
+                  <span className="inline-block transition-[translate] duration-200 ease-out group-hover:translate-x-2 group-hover:-translate-y-2">↗</span>
                 </a>
               )}
             </p>
@@ -132,7 +138,7 @@ function TitleBar({ glyph, name, onClose }: { glyph: GlyphName; name: string; on
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="group flex size-28 cursor-pointer items-center justify-center rounded-[4px] max-sm:size-36 text-muted outline-none hover:bg-plate hover:text-accent focus-visible:text-accent"
+        className="group flex size-28 cursor-pointer items-center justify-center rounded-[4px] max-sm:size-36 text-muted outline-none transition-[background-color,color] duration-150 ease-out hover:bg-plate hover:text-accent focus-visible:text-accent"
       >
         <PixelIcon name="close" pixel={1.5} />
       </button>
@@ -140,29 +146,43 @@ function TitleBar({ glyph, name, onClose }: { glyph: GlyphName; name: string; on
   )
 }
 
-/** Films start playing, muted and looping, as soon as they open; sound is one click away. */
+/**
+ * Films start playing, looping, with their sound, as soon as they open. If the
+ * browser won't let them make a sound yet, they play muted and sound is one click away.
+ */
 function Film({ path, width, height }: { path: string; width: number; height: number }) {
-  const [muted, setMuted] = useState(true)
+  const video = useRef<HTMLVideoElement>(null)
+  const [muted, setMuted] = useState(false)
   const [missing, setMissing] = useState(false)
+  useEffect(() => playWithSound(video.current, () => setMuted(true)), [missing])
+  const toggle = () => {
+    const element = video.current
+    if (!element) return
+    sound.play(element.muted ? 'toggleOn' : 'toggleOff')
+    element.muted = !element.muted
+    if (!element.muted) sound.hush()
+    setMuted(element.muted)
+  }
   if (missing) return <Placeholder glyph="film" label={path} style={{ width, height }} />
   return (
     <div className="relative bg-ink" style={{ width, height }}>
       <video
+        ref={video}
         src={filmUrl(path)}
         onError={() => setMissing(true)}
         poster={posterUrl(path)}
-        autoPlay
-        muted={muted}
         loop
         playsInline
         className="block size-full object-cover"
       />
       <button
         type="button"
-        onClick={() => setMuted((m) => !m)}
-        className="absolute bottom-10 right-10 cursor-pointer rounded-[4px] bg-ink/60 px-8 font-bit text-[18px] leading-[26px] text-white outline-none backdrop-blur-sm hover:bg-accent focus-visible:bg-accent"
+        onClick={toggle}
+        className="absolute bottom-10 right-10 cursor-pointer overflow-hidden rounded-[4px] bg-ink/60 px-8 font-bit text-[18px] leading-[26px] text-white outline-none backdrop-blur-sm transition-[background-color,scale] duration-150 ease-out hover:bg-accent focus-visible:bg-accent active:scale-[0.94]"
       >
-        {muted ? 'sound on' : 'sound off'}
+        <span key={muted ? 'on' : 'off'} className="inline-block motion-safe:animate-roll">
+          {muted ? 'sound on' : 'sound off'}
+        </span>
       </button>
     </div>
   )

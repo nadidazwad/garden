@@ -1,9 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [{ "source": "/((?!media/|fonts/|assets/).*)", "destination": "/index.html" }],
+  "rewrites": [{ "source": "/((?!media/|sound/|fonts/|assets/).*)", "destination": "/index.html" }],
   "headers": [
     {
-      "source": "/media/(.*)",
+      "source": "/(media|sound)/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     }
   ]

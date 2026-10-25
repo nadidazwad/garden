@@ -102,28 +102,43 @@ const LINK = `
 #########
 `
 
-/** The contact folder: a folder with a heart on it. */
+/** The contact folder: a folder with a face on it, smiling. */
 const HELLO = `
 .####.......
 #....#......
 #.....#####.
 #..........#
-#...##.##..#
-#...#####..#
-#....###...#
-#.....#....#
+#...#..#...#
+#..........#
+#..#....#..#
+#...####...#
 #..........#
 .##########.
 `
 
+/** The same face winking, while the pointer is on it. */
+const HELLO_WINK = `
+.####.......
+#....#......
+#.....#####.
+#..........#
+#..##..#...#
+#..........#
+#..#....#..#
+#...####...#
+#..........#
+.##########.
+`
+
+/** Open, the face leans back with the flap. */
 const HELLO_OPEN = `
 .###...........
 #..############
 #.#...........#
-#.#..##.##...#.
-#.#..#####...#.
-##....###...#..
-##.....#....#..
+#.#..#..#....#.
+#.#..........#.
+##..#....#..#..
+##...####...#..
 ##.........#...
 #..........#...
 ###########....
@@ -205,6 +220,7 @@ export type GlyphName =
   | 'film'
   | 'link'
   | 'hello'
+  | 'helloWink'
   | 'helloOpen'
   | 'close'
   | 'list'
@@ -234,6 +250,7 @@ export const glyphs: Record<GlyphName, Glyph> = {
   film: compile(FILM),
   link: compile(LINK),
   hello: compile(HELLO),
+  helloWink: compile(HELLO_WINK),
   helloOpen: compile(HELLO_OPEN),
   close: compile(CLOSE),
   list: compile(LIST),

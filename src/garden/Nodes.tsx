@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useSyncExternalStore, type CSSProperties } fro
 import type { Grove, GroveNode, LabelSide } from '../grove'
 import { glyphs, PixelIcon, type GlyphName } from '../icons'
 import type { Entry } from '../portfolio'
+import { sound } from '../sound'
 import { toScreen, type View } from './view.ts'
 
 interface Props {
@@ -44,14 +45,17 @@ export function Nodes({ grove, view, onOpen }: Props) {
             data-hidden={visible ? undefined : ''}
             inert={!visible}
           >
-            {/* Scales about the icon's centre, which is this wrapper's origin. */}
-            <div className={`absolute left-0 top-0 origin-top-left ${visible ? 'motion-safe:animate-pop' : ''}`}>
-              {node.kind === 'folder' ? (
-                <Folder node={node} open={grove.isOpen(node.id)} here={grove.location === node.id} onToggle={() => grove.toggle(node.id)} />
-              ) : (
-                <File node={node} here={grove.location === node.id} onOpen={() => onOpen(node)} />
-              )}
-            </div>
+            {node.kind === 'folder' ? (
+              <Folder
+                node={node}
+                shown={visible}
+                open={grove.isOpen(node.id)}
+                here={grove.location === node.id}
+                onToggle={() => grove.toggle(node.id)}
+              />
+            ) : (
+              <File node={node} shown={visible} here={grove.location === node.id} onOpen={() => onOpen(node)} />
+            )}
           </div>
         )
       })}
@@ -61,44 +65,42 @@ export function Nodes({ grove, view, onOpen }: Props) {
 
 const LABEL = 'halo whitespace-nowrap text-[length:calc(var(--spacing)*16)] leading-[1.2]'
 const NOTE = 'halo whitespace-nowrap text-[length:calc(var(--spacing)*12.5)] leading-[1.3] text-muted'
+const HOVER = 'group-hover:text-accent group-focus-visible:text-accent'
 
-function Folder({ node, open, here, onToggle }: { node: GroveNode<Entry>; open: boolean; here: boolean; onToggle: () => void }) {
+function Folder({ node, shown, open, here, onToggle }: { node: GroveNode<Entry>; shown: boolean; open: boolean; here: boolean; onToggle: () => void }) {
   const glyph: GlyphName = open ? 'openFolder' : 'folder'
   const entry = node.data?.kind === 'folder' ? node.data : undefined
-  const hover = 'group-hover:text-accent group-focus-visible:text-accent'
   return (
     <Item
       node={node}
+      shown={shown}
       glyph={glyph}
       expanded={open}
       onClick={onToggle}
-      iconClass={`${open ? 'text-ink' : 'text-muted'} ${hover}`}
+      iconClass={`${open ? 'text-ink' : 'text-muted'} ${HOVER}`}
       // An open folder's name steps back; its contents are what matter now.
-      labelClass={`${open && !here ? 'text-muted' : 'text-ink'} ${hover} group-focus-visible:underline`}
+      nameClass={`${open && !here ? 'text-muted' : 'text-ink'} ${HOVER}`}
       name={`${node.name}/`}
       note={entry?.note}
     />
   )
 }
 
-function File({ node, here, onOpen }: { node: GroveNode<Entry>; here: boolean; onOpen: () => void }) {
+function File({ node, shown, here, onOpen }: { node: GroveNode<Entry>; shown: boolean; here: boolean; onOpen: () => void }) {
   const entry = node.data
   const link = entry?.kind === 'link'
-  const hover = 'group-hover:text-accent group-focus-visible:text-accent'
   return (
     <Item
       node={node}
+      shown={shown}
       glyph={glyphFor(entry)}
       onClick={onOpen}
       current={here}
-      iconClass={link ? 'text-accent' : `${here ? 'text-accent' : 'text-faint'} ${hover}`}
-      // Links are somewhere to go, so they stand out in the accent; hovering underlines them.
-      labelClass={
-        link
-          ? 'text-accent group-hover:underline group-focus-visible:underline'
-          : `${here ? 'text-ink' : 'text-body'} ${hover} group-focus-visible:underline`
-      }
-      name={`${node.name}${link ? ' ↗' : ''}`}
+      link={link}
+      iconClass={link ? 'text-accent' : `${here ? 'text-accent' : 'text-faint'} ${HOVER}`}
+      // Links are somewhere to go, so they stand out in the accent; hovering draws a line under them.
+      nameClass={link ? 'text-accent' : `${here ? 'text-ink' : 'text-body'} ${HOVER}`}
+      name={node.name}
     />
   )
 }
@@ -120,21 +122,33 @@ function glyphFor(entry: Entry | undefined): GlyphName {
 
 interface ItemProps {
   node: GroveNode<Entry>
+  /** Whether it's on the plant; each time it comes back, it pops in again. */
+  shown: boolean
   glyph: GlyphName
   name: string
   note?: string
   iconClass: string
-  labelClass: string
+  nameClass: string
+  /** Opens a new tab: an arrow follows the name and nudges toward where it goes. */
+  link?: boolean
   expanded?: boolean
   current?: boolean
   onClick: () => void
 }
 
+/** Where a name's clip starts, so it grows out of the icon's side. */
+const SPROUT: Record<LabelSide, string> = {
+  right: 'inset(-10px 100% -10px -14px)',
+  left: 'inset(-10px -14px -10px 100%)',
+  below: 'inset(-10px -14px 100% -14px)',
+}
+
 /**
  * The icon sits centred on the node's point; the name hangs off it to the
  * right, the left, or underneath. The whole thing is one button, as big as the icon.
+ * Arriving, the icon pops and the name grows out of it a beat later.
  */
-function Item({ node, glyph, name, note, iconClass, labelClass, expanded, current, onClick }: ItemProps) {
+function Item({ node, shown, glyph, name, note, iconClass, nameClass, link, expanded, current, onClick }: ItemProps) {
   const { width, height } = glyphs[glyph]
   const px = (n: number) => `calc(var(--px) * ${n})`
   const gap = 'calc(var(--spacing) * 8)'
@@ -145,6 +159,7 @@ function Item({ node, glyph, name, note, iconClass, labelClass, expanded, curren
       : side === 'left'
         ? { right: `calc(100% + ${gap})`, top: '50%', transform: 'translateY(-50%)', textAlign: 'right' }
         : { left: '50%', top: 'calc(100% + var(--spacing) * 4)', transform: 'translateX(-50%)', textAlign: 'center' }
+  const nudge = 'calc(var(--spacing) * 2)'
   return (
     <button
       type="button"
@@ -152,13 +167,31 @@ function Item({ node, glyph, name, note, iconClass, labelClass, expanded, curren
       aria-expanded={expanded}
       aria-current={current || undefined}
       onClick={onClick}
+      // A mouse passing over gets the faintest tick; a finger has already touched it.
+      onPointerEnter={(event) => event.pointerType === 'mouse' && sound.play('hover')}
       className="group pointer-events-auto absolute block cursor-pointer outline-none"
       style={{ left: px(-width / 2), top: px(-height / 2), width: px(width), height: px(height) }}
     >
-      <PixelIcon name={glyph} data-glyph={node.id} className={`block transition-colors duration-150 ${iconClass}`} />
-      <span className="absolute flex flex-col" style={label}>
-        <span className={`${LABEL} decoration-1 underline-offset-3 transition-colors duration-150 ${labelClass}`}>
-          {name}
+      <PixelIcon
+        name={glyph}
+        data-glyph={node.id}
+        className={`block transition-colors duration-150 ${shown ? 'motion-safe:animate-pop' : ''} ${iconClass}`}
+      />
+      <span
+        className={`absolute flex flex-col ${shown ? 'motion-safe:animate-sprout' : ''}`}
+        style={{ ...label, '--sprout-from': SPROUT[side] } as CSSProperties}
+      >
+        <span className={LABEL}>
+          <span className={`line-draw ${link ? 'group-hover:line-drawn' : ''} group-focus-visible:line-drawn ${nameClass}`}>{name}</span>
+          {link && (
+            <span
+              aria-hidden
+              className={`ml-[0.3em] inline-block transition-[color,translate] duration-200 ease-out group-hover:translate-x-(--nudge) group-hover:-translate-y-(--nudge) ${nameClass}`}
+              style={{ '--nudge': nudge } as CSSProperties}
+            >
+              ↗
+            </span>
+          )}
         </span>
         {note && <span className={NOTE}>{note}</span>}
       </span>

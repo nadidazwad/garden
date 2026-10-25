@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { PixelIcon } from '../../icons'
+import { sound } from '../../sound'
 import type { Pair } from './parse.ts'
 import { ratio } from './media.ts'
 import { Tile } from './Tile.tsx'
@@ -24,9 +25,20 @@ export function Compare({ pairs }: { pairs: Pair[] }) {
   const [canFull] = useState(() => document.fullscreenEnabled)
 
   const clamp = (value: number) => Math.max(0, Math.min(100, value))
+  // Moved by hand, the divider ticks past every tenth, heard from where it is.
+  const tenth = useRef(5)
+  const moveTo = (next: number) => {
+    const at = clamp(next)
+    const band = Math.round(at / 10)
+    if (band !== tenth.current) {
+      tenth.current = band
+      sound.play('detent', { pan: (at / 50 - 1) * 0.6 })
+    }
+    setPos(at)
+  }
   const seek = (clientX: number) => {
     const box = frame.current?.getBoundingClientRect()
-    if (box) setPos(clamp(((clientX - box.left) / box.width) * 100))
+    if (box) moveTo(((clientX - box.left) / box.width) * 100)
   }
 
   useEffect(() => {
@@ -108,7 +120,7 @@ export function Compare({ pairs }: { pairs: Pair[] }) {
             if (next === undefined) return
             event.preventDefault()
             setNudging(false)
-            setPos(clamp(next))
+            moveTo(next)
           }}
           className={`absolute top-1/2 grid size-30 -translate-1/2 cursor-ew-resize place-items-center rounded-full border-[1.5px] border-white/55 bg-ink-veil text-white outline-none backdrop-blur-[6px] transition-transform duration-150 group-active/compare:scale-106 hover:scale-106 focus-visible:shadow-[0_0_0_3px_white,0_0_0_5px_#111214] sm:size-36 ${motion}`}
           style={{ left: `${pos}%` }}
@@ -121,7 +133,7 @@ export function Compare({ pairs }: { pairs: Pair[] }) {
             data-fullscreen
             aria-label={full ? 'Leave full screen' : 'Full screen'}
             onClick={() => (full ? document.exitFullscreen() : frame.current?.requestFullscreen())}
-            className="absolute right-8 bottom-8 grid size-28 cursor-pointer place-items-center rounded-full bg-ink-veil text-white outline-none focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-accent sm:right-12 sm:bottom-12 sm:size-34"
+            className="absolute right-8 bottom-8 grid size-28 cursor-pointer place-items-center rounded-full bg-ink-veil text-white outline-none transition-[scale] duration-150 ease-out hover:scale-106 active:scale-[0.92] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-accent sm:right-12 sm:bottom-12 sm:size-34"
           >
             <PixelIcon name="fullscreen" pixel={2} />
           </button>
@@ -135,8 +147,11 @@ export function Compare({ pairs }: { pairs: Pair[] }) {
               type="button"
               role="tab"
               aria-selected={i === tab}
-              onClick={() => setTab(i)}
-              className={`cursor-pointer rounded-full border px-11 py-6 text-[13px] leading-none outline-none transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:px-14 sm:py-8 sm:text-[14px] ${
+              onClick={() => {
+                if (i !== tab) sound.play('switch')
+                setTab(i)
+              }}
+              className={`cursor-pointer rounded-full border px-11 py-6 text-[13px] leading-none outline-none transition-[color,background-color,border-color,scale] duration-150 active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:px-14 sm:py-8 sm:text-[14px] ${
                 i === tab ? 'border-ink bg-ink text-white' : 'border-line bg-white text-body hover:text-ink'
               }`}
             >

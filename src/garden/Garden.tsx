@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties, type WheelEvent } from 'react'
 import { createGrove, type Grove, type GroveNode } from '../grove'
 import { opensAs, type Entry, type Layout } from '../portfolio'
+import { sound } from '../sound'
 import { useAddress } from './address.ts'
 import { CaseStudy, PAGE_IN } from './case/CaseStudy.tsx'
 import { Contact } from './Contact.tsx'
@@ -8,6 +9,7 @@ import { labelArea } from './labels.ts'
 import { Masthead } from './Masthead.tsx'
 import { Nodes } from './Nodes.tsx'
 import { Preview } from './Preview.tsx'
+import { usePlantSounds } from './sounds.ts'
 import { useDrag } from './useDrag.ts'
 import { useViewport, type Viewport } from './useViewport.ts'
 
@@ -42,6 +44,8 @@ function Plot({ layout, viewport }: { layout: Layout; viewport: Viewport }) {
   const [contact, setContact] = useState(false)
   const covered = useCovered(grove)
   useEffect(() => grove.setView(width / scale, height / scale), [grove, width, height, scale])
+  useEffect(() => sound.start(), [])
+  usePlantSounds(grove, view)
 
   const scroll = (event: WheelEvent<HTMLDivElement>) => {
     if (event.ctrlKey) return
@@ -50,7 +54,10 @@ function Plot({ layout, viewport }: { layout: Layout; viewport: Viewport }) {
   }
 
   const open = (node: GroveNode<Entry>) => {
-    if (node.data?.kind === 'link') window.open(node.data.href, '_blank', 'noopener')
+    if (node.data?.kind === 'link') {
+      sound.play('link')
+      window.open(node.data.href, '_blank', 'noopener')
+    }
     else if (grove.location === node.id) grove.close(node.id)
     else grove.open(node.id)
   }
@@ -64,7 +71,7 @@ function Plot({ layout, viewport }: { layout: Layout; viewport: Viewport }) {
         {...drag}
         onWheel={scroll}
       >
-        <Masthead grove={grove} view={view} masthead={masthead} onContact={() => setContact(true)} />
+        <Masthead grove={grove} view={view} masthead={masthead} contact={contact} onContact={setContact} />
         <div className="pointer-events-none absolute inset-0">
           <Suspense fallback={null}>
             <Scene grove={grove} keepOut={keepOut} scale={scale} dpr={dpr} paused={covered} />
@@ -106,6 +113,12 @@ function Opened({ grove, width, height, narrow }: { grove: Grove<Entry>; width: 
   if (previewing && previewing !== shown) setShown(previewing)
   const gone = useCallback(() => setShown(null), [])
 
+  // So does a case study while it falls away from the plant.
+  const [reading, setReading] = useState<GroveNode<Entry> | null>(null)
+  const open = how === 'page' && here?.data?.kind === 'case' ? here : null
+  if (open && open !== reading) setReading(open)
+  const read = useCallback(() => setReading(null), [])
+
   const cases = useMemo(() => grove.layout.nodes.filter((node) => node.data?.kind === 'case'), [grove])
 
   return (
@@ -122,13 +135,15 @@ function Opened({ grove, width, height, narrow }: { grove: Grove<Entry>; width: 
           onGone={gone}
         />
       )}
-      {how === 'page' && here?.data?.kind === 'case' && (
+      {reading?.data?.kind === 'case' && (
         <CaseStudy
-          path={here.id}
-          kicker={folderNote(nodes.get(here.parent))}
-          body={here.data.body}
-          next={nextCase(grove, cases, here)}
-          onClose={() => grove.close(here.id)}
+          path={reading.id}
+          kicker={folderNote(nodes.get(reading.parent))}
+          body={reading.data.body}
+          next={nextCase(grove, cases, reading)}
+          leaving={reading !== open}
+          onClose={() => grove.close(reading.id)}
+          onGone={read}
         />
       )}
     </>

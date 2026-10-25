@@ -1,4 +1,4 @@
-/* Design tokens. Type, spacing and easing are taken from finnolivertaylor.com
+/* Design tokens. Type, spacing and easing are taken from Finn Oliver Taylor's site
    (reference kept outside the repo, in ~/Projects/azwad-reference); the page is
    plain white and the accent is sky blue.
    Tailwind's default palette and type scale are cleared so only these exist:
@@ -103,6 +103,38 @@
     }
   }
 
+  /* A name growing out of its icon: the clip opens from the icon's side
+     (set in --sprout-from), and stops past the box so the halo shows. */
+  --animate-sprout: sprout 380ms var(--ease-out-expo) 70ms both;
+
+  @keyframes sprout {
+    from {
+      clip-path: var(--sprout-from);
+    }
+    to {
+      clip-path: inset(-10px -14px);
+    }
+  }
+
+  --animate-fade-in: fade-in 200ms ease-out both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /* Words or digits replacing the ones before them: up from just below. */
+  --animate-roll: roll 420ms var(--ease-out-expo) both;
+
+  @keyframes roll {
+    from {
+      translate: 0 0.45em;
+      opacity: 0;
+      filter: blur(2px);
+    }
+  }
+
   --shadow-media: 0 1px 7px rgb(0 0 0 / 0.45);
   --shadow-pill: 1px 1px 2px rgb(0 0 0 / 0.1);
   --drop-shadow-pixel: 0 2.5px 5.81px rgb(0 0 0 / 0.25);
@@ -151,6 +183,23 @@
   }
 }
 
+/* A one-pixel line drawn under words from their start, carrying on across a
+   line break, instead of an underline that blinks on. `line-drawn` (or a
+   group that turns it on) draws it; taking it away rubs it back out. */
+@utility line-draw {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: var(--line-drawn, 0%) 1px;
+  transition:
+    color var(--line-fade, 150ms) ease-out,
+    background-size 340ms var(--ease-out-expo);
+}
+
+@utility line-drawn {
+  --line-drawn: 100%;
+}
+
 /* Text sitting on the plant: a page-coloured outline keeps it legible over leaves. */
 @utility halo {
   text-shadow:
@@ -160,4 +209,31 @@
     1px 1px 0 var(--color-page),
     0 0 4px var(--color-page),
     0 0 8px var(--color-page);
+}
+
+/* A pixel icon in a button lifts on hover (its one-pixel shadow shows) and
+   presses flat into the page while held: it steps one icon pixel down and to
+   the left, onto its shadow, so it never leaves the grid. Not while the press
+   has turned into a drag. Unlayered, so it wins over the utilities. */
+.pixel-shadow {
+  visibility: hidden;
+}
+
+@media (hover: hover) {
+  .group:hover .pixel-shadow {
+    visibility: visible;
+  }
+}
+
+.group:active .pixel-glyph {
+  translate: -1px 1px;
+}
+
+.group:active .pixel-shadow,
+[data-dragging] .pixel-shadow {
+  visibility: hidden;
+}
+
+[data-dragging] .group:active .pixel-glyph {
+  translate: none;
 }

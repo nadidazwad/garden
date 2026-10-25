@@ -89,7 +89,7 @@ export function inline(text: string, strong = 'text-ink'): ReactNode {
       parts.push(
         <a
           href={href}
-          className="text-accent decoration-1 underline-offset-3 hover:underline"
+          className="line-draw text-accent outline-none hover:line-drawn focus-visible:line-drawn"
           {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
         >
           {inline(label)}

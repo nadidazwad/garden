@@ -23,7 +23,9 @@ interface Props {
   view: View
   /** Where the layout puts the name, the intro and the time. */
   masthead: Layout['masthead']
-  onContact: () => void
+  /** Whether the hello folder is open, which the last phrase of the intro toggles. */
+  contact: boolean
+  onContact: (open: boolean) => void
 }
 
 /**
@@ -36,7 +38,7 @@ interface Props {
  * the intro and the time step back to grey; pointing at them brings their
  * colours back.
  */
-export function Masthead({ grove, view, masthead, onContact }: Props) {
+export function Masthead({ grove, view, masthead, contact, onContact }: Props) {
   const { name: title, intro, time } = masthead
   const crossing = useCrossing(grove, title.box)
   const away = grove.location !== ROOT_ID
@@ -74,7 +76,7 @@ export function Masthead({ grove, view, masthead, onContact }: Props) {
         </h1>
       </Pinned>
       <Pinned grove={grove} view={view} at={[intro.box.minX, intro.box.minY]}>
-        <Intro grove={grove} words={intro} quiet={away} onContact={onContact} />
+        <Intro grove={grove} words={intro} quiet={away} contact={contact} onContact={onContact} />
       </Pinned>
       <Pinned grove={grove} view={view} at={[time.box.minX, time.box.minY]}>
         <Clock words={time} quiet={away} />
@@ -146,19 +148,36 @@ function Pinned({ grove, view, at, children }: PinnedProps) {
 
 type Words = Layout['masthead']['intro']
 
-function Intro({ grove, words, quiet, onContact }: { grove: Grove<unknown>; words: Words; quiet: boolean; onContact: () => void }) {
-  const go = (path: string) => () => grove.go(path)
+interface IntroProps {
+  grove: Grove<unknown>
+  words: Words
+  quiet: boolean
+  contact: boolean
+  onContact: (open: boolean) => void
+}
+
+/**
+ * The intro's phrases each open a part of the plant, and a second click closes
+ * it again: the whole branch the phrase opened, back to how the plant stood.
+ */
+function Intro({ grove, words, quiet, contact, onContact }: IntroProps) {
+  const opens = (path: string) => {
+    const id = path.replace(/\/+$/, '')
+    const open = grove.isExpanded(id)
+    return { open, onClick: () => (open ? grove.close(`/${id.split('/')[1]}`) : grove.go(path)) }
+  }
   return (
     <p
       className="pointer-events-auto text-body transition-colors duration-500"
       data-quiet={quiet ? '' : undefined}
       style={{ width: w(words.box.maxX - words.box.minX), fontSize: w(words.size), lineHeight: w(words.leading) }}
     >
-      Designer and engineer in Dhaka. I make <Phrase onClick={go('/work/')}>websites, products</Phrase> and{' '}
-      <Phrase onClick={go('/films/')}>short films</Phrase>. Right now I’m the{' '}
-      <Phrase onClick={go('/work/stableconverse/')}>founding design engineer</Phrase> at StableConverse, an AI sales
+      Designer and engineer in Dhaka. I make <Phrase {...opens('/work/')}>websites, products</Phrase> and{' '}
+      <Phrase {...opens('/films/')}>short films</Phrase>. Right now I’m the{' '}
+      <Phrase {...opens('/work/stableconverse/')}>founding design engineer</Phrase> at StableConverse, an AI sales
       agent for shops in Bangladesh. I’m also open to{' '}
-      <Phrase onClick={onContact} accent>
+      {/* Marked so the hello folder's click-away doesn't shut it just before this click would. */}
+      <Phrase open={contact} onClick={() => onContact(!contact)} accent contact>
         a few client projects a year
       </Phrase>
       .
@@ -166,12 +185,25 @@ function Intro({ grove, words, quiet, onContact }: { grove: Grove<unknown>; word
   )
 }
 
-function Phrase({ children, accent, onClick }: { children: ReactNode; accent?: boolean; onClick: () => void }) {
+interface PhraseProps {
+  children: ReactNode
+  /** What it opens is open: the line stays drawn under it until it's closed. */
+  open: boolean
+  accent?: boolean
+  /** It toggles the hello folder. */
+  contact?: boolean
+  onClick: () => void
+}
+
+function Phrase({ children, open, accent, contact, onClick }: PhraseProps) {
   return (
     <button
       type="button"
+      aria-expanded={open}
+      data-contact-toggle={contact ? '' : undefined}
       onClick={onClick}
-      className={`inline cursor-pointer text-left outline-none decoration-1 underline-offset-3 transition-colors duration-500 hover:text-accent hover:duration-150 hover:underline focus-visible:underline ${accent ? 'text-accent' : 'text-ink'}`}
+      // The line draws in under the phrase from its first word, and across a line break if it wraps.
+      className={`line-draw inline cursor-pointer text-left outline-none [--line-fade:500ms] hover:text-accent hover:line-drawn hover:[--line-fade:150ms] focus-visible:line-drawn ${open ? 'line-drawn' : ''} ${accent ? 'text-accent' : 'text-ink'}`}
     >
       {children}
     </button>
@@ -187,13 +219,19 @@ function Clock({ words, quiet }: { words: Words; quiet: boolean }) {
     const timer = setInterval(() => setNow(new Date()), 15_000)
     return () => clearInterval(timer)
   }, [])
+  const time = DHAKA.format(now)
   return (
     <p
       className="pointer-events-auto whitespace-nowrap text-body transition-colors duration-500"
       data-quiet={quiet ? '' : undefined}
       style={{ fontSize: w(words.size), lineHeight: w(words.leading) }}
     >
-      It’s <time className="text-ink transition-colors duration-500">{DHAKA.format(now)}</time> in Dhaka.
+      It’s{' '}
+      {/* A new minute rolls up into place. */}
+      <time key={time} className="inline-block text-ink transition-colors duration-500 motion-safe:animate-roll">
+        {time}
+      </time>{' '}
+      in Dhaka.
     </p>
   )
 }

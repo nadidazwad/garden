@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import { sound } from '../../sound'
 import { inline } from '../Markdown.tsx'
 import type { Stat, Thread } from './parse.ts'
 
@@ -24,8 +25,11 @@ function ThreadCard({ n, thread }: { n: number; thread: Thread }) {
       <button
         type="button"
         aria-expanded={open}
-        onClick={() => setOpen((was) => !was)}
-        className={`group relative block w-full cursor-pointer rounded-[40px] border p-25 text-left outline-none transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-accent ${
+        onClick={() => {
+          sound.play(open ? 'fold' : 'unfold')
+          setOpen(!open)
+        }}
+        className={`group relative block w-full cursor-pointer rounded-[40px] border p-25 text-left outline-none transition-[border-color,scale] duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-accent active:scale-[0.99] ${
           open ? 'border-faint' : 'border-rule hover:border-faint'
         }`}
       >
@@ -38,14 +42,22 @@ function ThreadCard({ n, thread }: { n: number; thread: Thread }) {
           <span
             className={`shrink-0 text-body ${open ? 'opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-visible:opacity-100' : ''}`}
           >
-            {open ? 'less' : 'more'}
+            <span key={open ? 'less' : 'more'} className="inline-block motion-safe:animate-roll">
+              {open ? 'less' : 'more'}
+            </span>
           </span>
         </span>
         <span
           className="relative block overflow-hidden transition-[height] duration-320 ease-out-expo motion-reduce:transition-none"
           style={{ height }}
         >
-          <span ref={inner} className="block pt-12 text-body">
+          {/* The reasoning surfaces as the card opens, and sinks back as it shuts. */}
+          <span
+            ref={inner}
+            className={`block pt-12 text-body transition-[opacity,translate,filter] motion-reduce:transition-none ${
+              open ? 'translate-y-0 opacity-100 blur-none delay-60 duration-360 ease-out-expo' : '-translate-y-4 opacity-0 blur-[2px] duration-160 ease-in'
+            }`}
+          >
             {inline(thread.body, 'text-ink-strong')}
           </span>
         </span>

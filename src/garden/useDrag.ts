@@ -1,10 +1,13 @@
 import { useRef, type MouseEvent, type PointerEvent } from 'react'
 import type { Grove } from '../grove'
+import { sound } from '../sound'
 
 // A press only becomes a drag once it has moved this far, so clicks still land. A fingertip wobbles more than a mouse.
 const THRESHOLD = { mouse: 4, touch: 10 }
 // Velocity older than this when the pointer lifts means it had stopped: no glide.
 const STALE_MS = 80
+// World px/s a throw needs before it's heard.
+const FLUNG = 1200
 
 /** Drag the view from anywhere, folders and files included, and let go to glide. */
 export function useDrag(grove: Grove, scale: number) {
@@ -64,7 +67,12 @@ export function useDrag(grove: Grove, scale: number) {
     if (!p || p.id !== event.pointerId) return
     press.current = null
     delete event.currentTarget.dataset.dragging
-    if (p.dragging && event.timeStamp - p.at < STALE_MS) grove.fling(p.vx, p.vy)
+    if (p.dragging && event.timeStamp - p.at < STALE_MS) {
+      grove.fling(p.vx, p.vy)
+      // A real throw is heard as air, louder the harder it went, on the side the plant moved toward.
+      const speed = Math.hypot(p.vx, p.vy)
+      if (grove.canPan && speed > FLUNG) sound.play('fling', { gain: Math.min(1, speed / 4000), pan: (-p.vx / speed) * 0.5 })
+    }
   }
 
   // Belt and braces for browsers that still deliver the click to the button.

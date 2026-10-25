@@ -1,7 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react'
 import { PixelIcon } from '../../icons'
 import { filmUrl, posterUrl, stillUrl } from '../../portfolio'
+import { sound } from '../../sound'
 import { Placeholder } from '../Media.tsx'
+import { playWithSound } from '../film.ts'
+import { Cross } from './Bar.tsx'
 import type { Media } from './parse.ts'
 import { isFilm, ratio } from './media.ts'
 
@@ -42,8 +45,30 @@ export function Viewer({ items, index, onIndex, onClose }: Props) {
   const go = (step: 1 | -1, ms = SLIDE) => {
     if (count < 2 || busy.current) return
     busy.current = true
+    // The swish leans the way the pieces move.
+    sound.play('step', { pan: step * 0.35 })
     slide(-step * view.w, 0, ms)
     window.setTimeout(() => onIndex(wrap(index + step)), ms)
+  }
+
+  // Opening, the dark comes up and the piece settles in out of it.
+  useLayoutEffect(() => {
+    sound.play('peek')
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    root.current?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'ease-out' })
+    track.current?.animate([{ transform: 'scale(0.96)' }, { transform: 'none' }], { duration: 420, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' })
+  }, [])
+
+  // Closing fades it all out from wherever it is, a swipe down included, then hands back.
+  const leaving = useRef(false)
+  const leave = () => {
+    const el = root.current
+    if (leaving.current) return
+    leaving.current = true
+    sound.play('unpeek')
+    if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return onClose()
+    el.style.pointerEvents = 'none'
+    el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: 'ease-in', fill: 'forwards' }).finished.then(onClose, onClose)
   }
 
   // A new piece lands in the middle; the track snaps back under it without moving.
@@ -63,7 +88,7 @@ export function Viewer({ items, index, onIndex, onClose }: Props) {
 
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') leave()
       if (event.key === 'ArrowRight') go(1)
       if (event.key === 'ArrowLeft') go(-1)
     }
@@ -97,7 +122,7 @@ export function Viewer({ items, index, onIndex, onClose }: Props) {
     drag.current = null
     const fast = (distance: number) => Math.abs(distance) / Math.max(1, performance.now() - d.t) > 0.45
     if (d.axis === 'y') {
-      if (Math.abs(d.dy) > 0.25 * view.h || (fast(d.dy) && Math.abs(d.dy) > 64)) onClose()
+      if (Math.abs(d.dy) > 0.25 * view.h || (fast(d.dy) && Math.abs(d.dy) > 64)) leave()
       else slide(0, 0, 360)
     } else if (d.axis === 'x') {
       const ms = Math.max(120, SLIDE * (1 - Math.abs(d.dx) / view.w))
@@ -142,10 +167,10 @@ export function Viewer({ items, index, onIndex, onClose }: Props) {
         <button
           type="button"
           aria-label="Close"
-          onClick={onClose}
-          className="absolute top-20 right-22 z-10 grid size-40 cursor-pointer place-items-center rounded-full bg-white/10 text-white/70 outline-none transition-colors duration-150 ease-out hover:bg-white/20 hover:text-white focus-visible:bg-white/20 focus-visible:text-white"
+          onClick={leave}
+          className="group absolute top-20 right-22 z-10 grid size-40 cursor-pointer place-items-center rounded-full bg-white/10 text-white/70 outline-none transition-[background-color,color,scale] duration-150 ease-out hover:bg-white/20 hover:text-white focus-visible:bg-white/20 focus-visible:text-white active:scale-[0.92]"
         >
-          <PixelIcon name="close" pixel={2} />
+          <Cross size={20} />
         </button>
         {count > 1 &&
           ([-1, 1] as const).map((step) => (
@@ -154,7 +179,7 @@ export function Viewer({ items, index, onIndex, onClose }: Props) {
               type="button"
               aria-label={step < 0 ? 'Previous' : 'Next'}
               onClick={() => go(step)}
-              className={`absolute top-1/2 z-10 grid h-64 w-56 -translate-y-1/2 cursor-pointer place-items-center text-white/45 outline-none transition-colors duration-150 ease-out hover:text-white focus-visible:text-white max-sm:hidden ${
+              className={`absolute top-1/2 z-10 grid h-64 w-56 -translate-y-1/2 cursor-pointer place-items-center text-white/45 outline-none transition-[color,scale] duration-150 ease-out hover:text-white focus-visible:text-white active:scale-[0.9] max-sm:hidden ${
                 step < 0 ? 'left-24' : 'right-24'
               }`}
             >
@@ -162,7 +187,9 @@ export function Viewer({ items, index, onIndex, onClose }: Props) {
             </button>
           ))}
         <div className="pointer-events-none absolute inset-x-0 px-24 text-center" style={{ top: box.top + box.height + 18 }}>
-          <p className="text-[13px] leading-[18px] text-white/80">{items[index].alt}</p>
+          <p key={index} className="text-[13px] leading-[18px] text-white/80 motion-safe:animate-roll">
+            {items[index].alt}
+          </p>
           {count > 1 && (
             <p className="mt-4 text-[12px] leading-[17px] text-white/40 tabular-nums">
               {index + 1} of {count}
@@ -187,16 +214,20 @@ function fit(media: Media, view: { w: number; h: number }) {
 
 function Shown({ media, live }: { media: Media; live: boolean }) {
   const [missing, setMissing] = useState(false)
+  const video = useRef<HTMLVideoElement>(null)
   const film = isFilm(media)
+  // A film opened full size plays with its sound, as the preview's do; its controls can turn it down.
+  useEffect(() => {
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) playWithSound(video.current, () => {})
+  }, [missing])
   if (missing) return <Placeholder glyph={film ? 'film' : 'picture'} label={media.alt} className="size-full" />
   if (film && live)
     return (
       <video
+        ref={video}
         src={filmUrl(media.src)}
         poster={posterUrl(media.src)}
         aria-label={media.alt}
-        autoPlay={!matchMedia('(prefers-reduced-motion: reduce)').matches}
-        muted
         loop
         playsInline
         controls

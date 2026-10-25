@@ -36,7 +36,8 @@ export function Tile({ media, className = '', eager, fit = 'cover' }: { media: M
         loading={eager ? undefined : 'lazy'}
         draggable={false}
         onError={() => setMissing(true)}
-        className={`block size-full bg-well ${fill} ${className}`}
+        onLoad={(event) => (event.currentTarget.dataset.loaded = '')}
+        className={`block size-full bg-well ${fill} motion-safe:opacity-0 motion-safe:transition-opacity motion-safe:duration-300 motion-safe:data-loaded:opacity-100 ${className}`}
       />
     )
   return (

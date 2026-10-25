@@ -1,5 +1,6 @@
-import { useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { PixelIcon, type GlyphName } from '../../icons'
+import { sound } from '../../sound'
 import { inline } from '../Markdown.tsx'
 import type { Media, Term } from './parse.ts'
 import { ratio } from './media.ts'
@@ -30,14 +31,24 @@ export function Terms({ intro, items, open }: { intro?: string; items: Term[]; o
   const touch = useTouch()
   const [cards, setCards] = useState(false)
   const showCards = touch || cards
+  const show = (next: boolean) => {
+    if (next !== cards) sound.play('switch')
+    setCards(next)
+  }
   return (
     <div>
       <div className="flex items-start gap-25">
         <div className="min-w-0 flex-1">{intro && <p>{inline(intro, 'text-ink-strong')}</p>}</div>
         {!touch && (
-          <div role="group" aria-label="How to show the deliverables" className="flex shrink-0 gap-3 rounded-[10px] bg-[#e2e2e2] p-4">
-            <Switch on={!cards} glyph="list" label="Show them as a list" onClick={() => setCards(false)} />
-            <Switch on={cards} glyph="cards" label="Show them as cards" onClick={() => setCards(true)} />
+          <div role="group" aria-label="How to show the deliverables" className="relative flex shrink-0 gap-3 rounded-[10px] bg-[#e2e2e2] p-4">
+            {/* One white thumb slides between the two, rather than each lighting up on its own. */}
+            <span
+              aria-hidden
+              className="absolute top-4 left-4 size-30 rounded-[10px] border-[0.75px] border-[#dfdfdf] bg-white shadow-[0.5px_0.5px_1px_#0000000d] transition-[translate] duration-300 ease-out-expo motion-reduce:transition-none"
+              style={{ translate: cards ? '33px 0' : '0 0' }}
+            />
+            <Switch on={!cards} glyph="list" label="Show them as a list" onClick={() => show(false)} />
+            <Switch on={cards} glyph="cards" label="Show them as cards" onClick={() => show(true)} />
           </div>
         )}
       </div>
@@ -53,10 +64,8 @@ function Switch({ on, glyph, label, onClick }: { on: boolean; glyph: GlyphName; 
       aria-label={label}
       aria-pressed={on}
       onClick={onClick}
-      className={`grid size-30 cursor-pointer place-items-center border-[0.75px] outline-none transition-[background,color,border-color] duration-150 ease-out focus-visible:outline-2 focus-visible:outline-accent ${
-        on
-          ? 'rounded-[10px] border-[#dfdfdf] bg-white text-ink-strong shadow-[0.5px_0.5px_1px_#0000000d]'
-          : 'rounded-[6px] border-transparent text-body hover:text-ink'
+      className={`relative grid size-30 cursor-pointer place-items-center rounded-[10px] outline-none transition-[color,scale] duration-150 ease-out focus-visible:outline-2 focus-visible:outline-accent active:scale-[0.9] ${
+        on ? 'text-ink-strong' : 'text-body hover:text-ink'
       }`}
     >
       <PixelIcon name={glyph} pixel={2} />
@@ -64,12 +73,15 @@ function Switch({ on, glyph, label, onClick }: { on: boolean; glyph: GlyphName; 
   )
 }
 
+/** How quickly the floating preview catches up with the pointer, per second. */
+const FOLLOW = 18
+
 function List({ items, open }: { items: Term[]; open: (media: Media) => void }) {
   const list = useRef<HTMLDListElement>(null)
   const [hot, setHot] = useState<number | null>(null)
-  const [at, setAt] = useState({ x: 0, y: 0 })
   const width = panelWidth(hot === null ? undefined : items[hot])
   const shown = hot === null ? undefined : items[hot]
+  const [float, follow] = useFollow(hot !== null)
 
   return (
     <dl
@@ -79,7 +91,7 @@ function List({ items, open }: { items: Term[]; open: (media: Media) => void }) 
         const box = list.current?.getBoundingClientRect()
         if (!box) return
         const room = window.innerWidth - event.clientX - 28 - 16
-        setAt({ x: event.clientX - box.left + (room < width ? -(28 + width) : 28), y: event.clientY - box.top })
+        follow(event.clientX - box.left + (room < width ? -(28 + width) : 28), event.clientY - box.top)
       }}
       className={`relative mt-40 flex flex-col gap-12 ${hot === null ? '' : 'cursor-pointer'}`}
     >
@@ -88,7 +100,11 @@ function List({ items, open }: { items: Term[]; open: (media: Media) => void }) 
         return (
           <div
             key={item.term}
-            onMouseEnter={() => setHot(i)}
+            onMouseEnter={() => {
+              setHot(i)
+              // Running a finger down the list ticks past each row.
+              sound.play('hover')
+            }}
             className={`relative flex flex-row items-baseline gap-14 transition-opacity duration-160 ease-out ${hot !== null && !on ? 'opacity-45' : ''}`}
           >
             {item.media && (
@@ -108,14 +124,15 @@ function List({ items, open }: { items: Term[]; open: (media: Media) => void }) 
           </div>
         )
       })}
-      <div
-        aria-hidden
-        className={`pointer-events-none absolute top-0 left-0 z-10 flex h-218 overflow-hidden rounded-[20px] transition-[opacity,transform] duration-160 ease-out ${
-          shown?.media ? 'bg-white p-5 shadow-[3px_4px_12px_#00000026]' : 'bg-well'
-        } ${shown ? 'translate-y-[-50%] opacity-100' : 'translate-y-[calc(6px-50%)] opacity-0'}`}
-        style={{ left: at.x, top: at.y, width }}
-      >
-        {shown?.media && <Tile key={shown.term} media={shown.media} eager className="rounded-[15px]" />}
+      <div ref={float} aria-hidden className="pointer-events-none absolute top-0 left-0 z-10 will-change-transform">
+        <div
+          className={`flex h-218 origin-left -translate-y-1/2 overflow-hidden rounded-[20px] transition-[opacity,scale,width] duration-200 ease-out-expo ${
+            shown?.media ? 'bg-white p-5 shadow-[3px_4px_12px_#00000026]' : 'bg-well'
+          } ${shown ? 'scale-100 opacity-100' : 'scale-[0.94] opacity-0'}`}
+          style={{ width }}
+        >
+          {shown?.media && <Tile key={shown.term} media={shown.media} eager className="rounded-[15px] motion-safe:animate-fade-in" />}
+        </div>
       </div>
     </dl>
   )
@@ -133,9 +150,14 @@ function Cards({ items, open }: { items: Term[]; open: (media: Media) => void })
               type="button"
               aria-label={item.media.alt || item.term}
               onClick={() => open(item.media!)}
-              className="mt-16 flex aspect-[327/218] w-full cursor-pointer self-end overflow-hidden rounded-[20px] bg-white p-5 shadow-[3px_4px_12px_#00000026] outline-none focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-accent"
+              className="group mt-16 flex aspect-[327/218] w-full cursor-pointer self-end overflow-hidden rounded-[20px] bg-white p-5 shadow-[3px_4px_12px_#00000026] outline-none transition-[scale,box-shadow] duration-200 ease-out hover:shadow-[3px_6px_16px_#0000002e] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-accent active:scale-[0.98]"
             >
-              <Tile media={item.media} className="rounded-[15px]" />
+              {/* The picture leans in within its mat. */}
+              <span className="block size-full overflow-hidden rounded-[15px]">
+                <span className="block size-full transition-[scale] duration-450 ease-out-expo group-hover:scale-[1.03]">
+                  <Tile media={item.media} />
+                </span>
+              </span>
             </button>
           ) : (
             <div aria-hidden className="mt-16 aspect-[327/218] w-full self-end rounded-[20px] bg-well" />
@@ -144,4 +166,47 @@ function Cards({ items, open }: { items: Term[]; open: (media: Media) => void })
       ))}
     </div>
   )
+}
+
+/**
+ * Eases an element toward the point it's given, so it trails the pointer with a
+ * little weight. Showing up, it starts where the pointer is instead of sliding over.
+ */
+function useFollow(active: boolean) {
+  const element = useRef<HTMLDivElement>(null)
+  const state = useRef({ x: 0, y: 0, tx: 0, ty: 0, frame: 0, last: 0, placed: false })
+  useEffect(() => {
+    const s = state.current
+    if (!active) s.placed = false
+    return () => {
+      cancelAnimationFrame(s.frame)
+      s.frame = 0
+    }
+  }, [active])
+
+  const follow = (x: number, y: number) => {
+    const s = state.current
+    s.tx = x
+    s.ty = y
+    const paint = () => element.current && (element.current.style.transform = `translate3d(${s.x}px, ${s.y}px, 0)`)
+    if (!s.placed || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      s.x = x
+      s.y = y
+      s.placed = true
+      return paint()
+    }
+    if (s.frame) return
+    s.last = 0
+    const tick = (now: number) => {
+      const dt = s.last ? Math.min((now - s.last) / 1000, 0.05) : 1 / 60
+      s.last = now
+      const k = 1 - Math.exp(-FOLLOW * dt)
+      s.x += (s.tx - s.x) * k
+      s.y += (s.ty - s.y) * k
+      paint()
+      s.frame = Math.hypot(s.tx - s.x, s.ty - s.y) > 0.3 ? requestAnimationFrame(tick) : 0
+    }
+    s.frame = requestAnimationFrame(tick)
+  }
+  return [element, follow] as const
 }

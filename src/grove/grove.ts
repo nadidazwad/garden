@@ -34,6 +34,8 @@ export interface Grove<T = unknown> {
   isVisible(nodeId: string): boolean
   /** True while a folder's branch is out, including while it retracts. */
   isOpen(folderId: string): boolean
+  /** True from the moment a folder opens until it's closed: where it's headed, not what's drawn. */
+  isExpanded(folderId: string): boolean
   /** Opens a folder (and the folders it's in), or a file; either way it becomes the location. */
   open(id: string): void
   /** Closes a folder and everything open inside it, or puts a file down. The location steps back out if it was inside. */
@@ -321,6 +323,7 @@ export function createGrove<T>(
     growth: (id) => growth.get(id) ?? 0,
     isVisible: (id) => visible.has(id),
     isOpen: (id) => openIcons.has(id),
+    isExpanded: (id) => expanded.has(id),
 
     get location() {
       return location

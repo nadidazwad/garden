@@ -4,6 +4,6 @@ I design and build **websites, products and short films**, mostly for businesses
 
 I build with AI agents. **The taste, the direction and the final call are mine.**
 
-[hello@azwad.me](mailto:hello@azwad.me) · [X](https://x.com/nadidazwad) · [LinkedIn](https://www.linkedin.com/in/nadid-azwad-311833318) · [GitHub](https://github.com/nadidazwad)
+[nadidazwad@gmail.com](mailto:nadidazwad@gmail.com) · [X](https://x.com/nadidazwad) · [LinkedIn](https://www.linkedin.com/in/nadid-azwad-311833318) · [GitHub](https://github.com/nadidazwad)
 
-_Type and layout after [Finn Oliver Taylor](https://finnolivertaylor.com)._
+_Type and layout after Finn Oliver Taylor._

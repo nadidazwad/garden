@@ -31,6 +31,6 @@ The fonts (PP Neue Montreal, PP Mondwest and PP NeueBit, from Pangram Pangram) a
 
 The code is MIT, so take whatever's useful. The work it shows isn't: the case studies and other writing in `src/portfolio/writing/`, the captions in `src/portfolio/tree.ts`, and the screenshots and films in `public/media/` are © Nadid Azwad and the clients they were made for, all rights reserved.
 
-Type and layout after [Finn Oliver Taylor](https://finnolivertaylor.com).
+Type and layout after Finn Oliver Taylor.
 
-[hello@azwad.me](mailto:hello@azwad.me) · [X](https://x.com/nadidazwad) · [LinkedIn](https://www.linkedin.com/in/nadid-azwad-311833318)
+[nadidazwad@gmail.com](mailto:nadidazwad@gmail.com) · [X](https://x.com/nadidazwad) · [LinkedIn](https://www.linkedin.com/in/nadid-azwad-311833318)

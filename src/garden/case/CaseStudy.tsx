@@ -12,6 +12,7 @@ import { Viewer } from './Viewer.tsx'
 
 /** How long the page takes to grow in over the plant, in ms. */
 export const PAGE_IN = 760
+const PAGE_OUT = 300
 
 interface Props {
   /** Where it sits in the tree; a new path starts back at the top. */
@@ -20,14 +21,17 @@ interface Props {
   kicker?: string
   body: string
   next: { label: string; go: () => void }
+  /** It's been closed: fall back from the plant, then call `onGone`. */
+  leaving: boolean
   onClose: () => void
+  onGone: () => void
 }
 
 /**
  * A case study, as a page that fills in over the plant: the reference's case
  * template on white. The Markdown dialect it reads is described in `parse.ts`.
  */
-export function CaseStudy({ path, kicker, body, next, onClose }: Props) {
+export function CaseStudy({ path, kicker, body, next, leaving, onClose, onGone }: Props) {
   const page = useRef<HTMLDivElement>(null)
   const doc = useMemo(() => parseCase(body), [body])
   const pieces = useMemo(() => gallery(doc), [doc])
@@ -67,6 +71,17 @@ export function CaseStudy({ path, kicker, body, next, onClose }: Props) {
     element.animate([{ borderRadius: '28px' }, { borderRadius: '0px' }], timing)
   }, [])
 
+  // Closed, it falls back the way it came, quicker, and the plant shows through as it goes.
+  useEffect(() => {
+    const element = page.current
+    if (!leaving || !element) return
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return onGone()
+    const timing = { duration: PAGE_OUT, easing: 'cubic-bezier(0.4, 0, 0.9, 0.6)', fill: 'forwards' } as const
+    const fall = element.animate([{ opacity: 1, transform: 'none', borderRadius: '0px' }, { opacity: 0, transform: 'scale(0.94) translateY(20px)', borderRadius: '28px' }], timing)
+    fall.finished.then(onGone, () => {})
+    return () => fall.cancel()
+  }, [leaving, onGone])
+
   // The edge blur waits for the page to settle: six backdrop filters cost the opening frame more than everything else together.
   const [grown, setGrown] = useState(() => matchMedia('(prefers-reduced-motion: reduce)').matches)
   useEffect(() => {
@@ -75,11 +90,11 @@ export function CaseStudy({ path, kicker, body, next, onClose }: Props) {
   }, [])
 
   useEffect(() => {
-    if (viewing !== null) return
+    if (viewing !== null || leaving) return
     const key = (event: KeyboardEvent) => event.key === 'Escape' && onClose()
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
-  }, [onClose, viewing])
+  }, [onClose, viewing, leaving])
 
   const shownKicker = doc.kicker ?? kicker
   return (
@@ -88,6 +103,7 @@ export function CaseStudy({ path, kicker, body, next, onClose }: Props) {
       tabIndex={-1}
       role="dialog"
       aria-label={doc.title.replace(/\*\*|_/g, '')}
+      inert={leaving}
       className={`fixed inset-0 z-30 overflow-x-clip bg-white text-copy-tight outline-none ${viewing === null ? 'overflow-y-auto' : 'overflow-y-hidden'}`}
     >
       <Bar scroller={page} onClose={onClose} onNext={next.go} />
