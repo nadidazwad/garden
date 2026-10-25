@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
 import { pixelGrid } from '../grove'
+import { desktop, phone, type Layout } from '../portfolio'
+
+/** Below this width (Tailwind's `sm`, so CSS can use `max-sm:`) the garden takes the phone layout. */
+const NARROW = 640
 
 export interface Viewport {
   width: number
@@ -9,9 +13,12 @@ export interface Viewport {
   scale: number
   /** One icon pixel / dither cell, in CSS px. */
   pixel: number
+  narrow: boolean
+  /** The layout drawn for this shape of screen. */
+  layout: Layout
 }
 
-/** The plant fills the viewport; it grows a little on big screens. */
+/** The plant fills the viewport, scaled to fit the view its layout is drawn for. */
 export function useViewport() {
   const [viewport, setViewport] = useState(measure)
   useEffect(() => {
@@ -26,6 +33,9 @@ function measure(): Viewport {
   const width = window.innerWidth
   const height = window.innerHeight
   const dpr = Math.min(window.devicePixelRatio || 1, 3)
-  const scale = Math.min(1.3, Math.max(0.85, Math.min(width / 1280, height / 800)))
-  return { width, height, dpr, scale, pixel: pixelGrid(scale, dpr).css }
+  const narrow = width < NARROW
+  const layout = narrow ? phone : desktop
+  const { frame } = layout
+  const scale = Math.min(frame.maxScale, Math.max(frame.minScale, Math.min(width / frame.width, height / frame.height)))
+  return { width, height, dpr, scale, pixel: pixelGrid(scale, dpr).css, narrow, layout }
 }

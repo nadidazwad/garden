@@ -160,6 +160,49 @@ describe('grove', () => {
     expect(bottomEdge(160)).toBeCloseTo(100)
   })
 
+  it('can keep the plant to the width of the view, so the view only moves up and down', () => {
+    const grove = createGrove(tree, { ground: 100, fitWidth: true, headroom: 90 })
+    grove.setView(160, 120)
+    settle(grove)
+    const [x] = grove.camera
+    grove.toggle('/a')
+    grove.toggle('/a/b')
+    settle(grove)
+    expect(grove.canPan).toBe(true)
+    grove.pan(300, -200)
+    expect(grove.camera[0]).toBe(x)
+    // As high as it goes, the top of the view sits the headroom above the plant's top.
+    grove.pan(0, -2000)
+    const top = Math.min(...[...grove.layout.branches.values()].flatMap((branch) => branch.path.points.map(([, y]) => y)))
+    expect(grove.camera[1] - 60).toBeLessThanOrEqual(top - 90 + 1)
+  })
+
+  it('can let only one sibling folder be open, growing it once the other is back in', () => {
+    // Root ─┬─ a/ ── b/ ── c.txt
+    //       └─ e/ ── f.txt
+    const siblings: FolderSpec = {
+      ...tree,
+      children: [
+        tree.children[0],
+        { name: 'e', at: [150, -20], label: 'right', branch: { path: [[155, -100], [150, -200]] }, children: [{ name: 'f.txt', at: [150, -150], label: 'right' }] },
+      ],
+    }
+    const grove = createGrove(siblings, { exclusive: true })
+    settle(grove)
+    grove.open('/a/b')
+    settle(grove)
+    expect(grove.isVisible('/a/b/c.txt')).toBe(true)
+
+    grove.open('/e')
+    for (let frame = 0; frame < 600; frame++) {
+      grove.step(1 / 60)
+      if (grove.growth('/a') > 0) expect(grove.growth('/e')).toBe(0)
+    }
+    expect(grove.isOpen('/a')).toBe(false)
+    expect(grove.isOpen('/a/b')).toBe(false)
+    expect(grove.isVisible('/e/f.txt')).toBe(true)
+  })
+
   it('ignores branches of folders that are still closed when deciding whether to pan', () => {
     const grove = createGrove(tree)
     // Tall enough for the top level, not for b/, which sits inside a/ until a/ opens.

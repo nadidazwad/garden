@@ -77,7 +77,8 @@ export function Contact({ open, onToggle, pixel }: Props) {
         aria-expanded={open}
         aria-controls="contact-ways"
         onClick={() => onToggle(!open)}
-        className="group flex cursor-pointer items-center gap-8 outline-none"
+        // On a phone the plant passes under the corner; a soft plate of page keeps the folder legible over it.
+        className="group flex cursor-pointer items-center gap-8 outline-none max-sm:rounded-[12px] max-sm:bg-page max-sm:shadow-[0_0_10px_8px_var(--color-page)]"
       >
         <span
           className={`text-small transition-colors duration-150 group-hover:text-accent group-focus-visible:text-accent ${open ? 'text-accent' : 'text-ink'}`}

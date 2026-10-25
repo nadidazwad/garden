@@ -1,15 +1,7 @@
 import { labelArea } from '../garden/labels.ts'
-import { createGrove, type Bounds, type GroveBranch, type GroveNode, type Vec2 } from '../grove'
-import { GROUND, INTRO, portfolio, TIME, type Entry } from '../portfolio'
-
-function distance([px, py]: Vec2, box: Bounds) {
-  const dx = Math.max(box.minX - px, 0, px - box.maxX)
-  const dy = Math.max(box.minY - py, 0, py - box.maxY)
-  return Math.hypot(dx, dy)
-}
-
-/** Labels with less breathing room than this from a branch (leaves included) or a twig get flagged. */
-const ROOM = { branch: 22, limb: 10 }
+import { createGrove } from '../grove'
+import { GROUND, INTRO, portfolio, TIME } from '../portfolio'
+import { crowdedBy } from './crowding.ts'
 
 /** Dev only: the whole tree opened at once, as lines, for placing branches by eye. */
 export default function Overview() {
@@ -20,17 +12,7 @@ export default function Overview() {
   const depth = (id: string) => id.split('/').length - 1
   const hues = ['#6b4a33', '#007bb9', '#d19a3d', '#36c21c', '#4fa3e0', '#8f9a22']
   const branches = [...layout.branches.values()]
-  const crowding = (node: GroveNode<Entry>) => {
-    const box = labelArea(node, { icon: false })
-    // Every icon hangs off its parent's branch, and a folder's own branch leaves from its corner.
-    const expected = (branch: GroveBranch, p: Vec2) =>
-      (branch.id === node.parent || branch.id === node.id) && Math.hypot(p[0] - node.at[0], p[1] - node.at[1]) < 50
-    return branches.filter(
-      (branch) =>
-        branch.path.points.some((p) => !expected(branch, p) && distance(p, box) < ROOM.branch) ||
-        branch.limbs.some((limb) => limb.points.some((p) => distance(p, box) < ROOM.limb)),
-    )
-  }
+  const crowding = (node: (typeof layout.nodes)[number]) => crowdedBy(node, branches)
   const crowded = new Set(layout.nodes.filter((node) => crowding(node).length).map((node) => node.id))
   for (const node of layout.nodes) {
     const near = crowding(node)

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties, type WheelEvent } from 'react'
 import { createGrove, type Grove, type GroveNode } from '../grove'
-import { GROUND, INTRO, opensAs, portfolio, TIME, type Entry } from '../portfolio'
+import { opensAs, type Entry, type Layout } from '../portfolio'
 import { CaseStudy } from './case/CaseStudy.tsx'
 import { Contact } from './Contact.tsx'
 import { labelArea } from './labels.ts'
@@ -9,20 +9,32 @@ import { Nodes } from './Nodes.tsx'
 import { Preview } from './Preview.tsx'
 import { useDrag } from './useDrag.ts'
 import { useLocationSync } from './useLocationSync.ts'
-import { useViewport } from './useViewport.ts'
+import { useViewport, type Viewport } from './useViewport.ts'
 
 // three.js is ~1 MB; the page paints first and the plant grows once it arrives.
 const Scene = lazy(() => import('../scene/Scene.tsx'))
 
 /** The portfolio: a file tree drawn as a dithered plant, growing in from the left. */
 export default function Garden() {
+  const viewport = useViewport()
+  // Each layout grows a plant of its own; crossing from one to the other starts afresh at the same address.
+  return <Plot key={viewport.narrow ? 'phone' : 'desktop'} layout={viewport.layout} viewport={viewport} />
+}
+
+function Plot({ layout, viewport }: { layout: Layout; viewport: Viewport }) {
   const [grove] = useState(() =>
-    createGrove(portfolio, { still: matchMedia('(prefers-reduced-motion: reduce)').matches, ground: GROUND }),
+    createGrove(layout.tree, {
+      still: matchMedia('(prefers-reduced-motion: reduce)').matches,
+      ground: layout.ground,
+      fitWidth: layout.fitWidth,
+      headroom: layout.headroom,
+      exclusive: layout.exclusive,
+    }),
   )
   useSyncExternalStore(grove.subscribe, () => grove.version)
   useLocationSync(grove)
-  const [keepOut] = useState(() => [...grove.layout.nodes.map((node) => labelArea(node)), INTRO, TIME])
-  const viewport = useViewport()
+  const { masthead } = layout
+  const [keepOut] = useState(() => [...grove.layout.nodes.map((node) => labelArea(node)), masthead.intro.box, masthead.time.box])
   const { width, height, scale, dpr } = viewport
   const view = useMemo(() => ({ width, height, scale, dpr }), [width, height, scale, dpr])
   const drag = useDrag(grove, scale)
@@ -50,7 +62,7 @@ export default function Garden() {
         {...drag}
         onWheel={scroll}
       >
-        <Masthead grove={grove} view={view} onContact={() => setContact(true)} />
+        <Masthead grove={grove} view={view} masthead={masthead} onContact={() => setContact(true)} />
         <div className="pointer-events-none absolute inset-0">
           <Suspense fallback={null}>
             <Scene grove={grove} keepOut={keepOut} scale={scale} dpr={dpr} />
@@ -59,13 +71,13 @@ export default function Garden() {
         <Nodes grove={grove} view={view} onOpen={open} />
       </div>
       <Contact open={contact} onToggle={setContact} pixel={viewport.pixel} />
-      <Opened grove={grove} width={width} height={height} />
+      <Opened grove={grove} width={width} height={height} narrow={viewport.narrow} />
     </>
   )
 }
 
 /** Whatever file is open: a preview over the plant, or a case study over everything. */
-function Opened({ grove, width, height }: { grove: Grove<Entry>; width: number; height: number }) {
+function Opened({ grove, width, height, narrow }: { grove: Grove<Entry>; width: number; height: number; narrow: boolean }) {
   const nodes = useMemo(() => new Map(grove.layout.nodes.map((node) => [node.id, node])), [grove])
   const here = nodes.get(grove.location)
   const how = here?.kind === 'file' ? opensAs(here.data) : 'none'
@@ -86,6 +98,7 @@ function Opened({ grove, width, height }: { grove: Grove<Entry>; width: number; 
           node={shown}
           width={width}
           height={height}
+          narrow={narrow}
           leaving={shown !== previewing}
           onClose={() => grove.close(shown.id)}
           onGone={gone}

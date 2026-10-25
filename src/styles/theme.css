@@ -116,6 +116,14 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* What a tap does is its own feedback; the browser's grey flash over it only says "website". */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Taps land at once, without waiting to see whether a double-tap zoom is coming. */
+  a,
+  button {
+    touch-action: manipulation;
   }
 
   ::selection {
@@ -125,11 +133,21 @@
 }
 
 /* Words set in the world step back to grey while the visitor is off in the
-   folders; pointing at them brings their colours back. */
+   folders; pointing at them brings their colours back. A tap leaves :hover
+   and :focus stuck on what it touched, so on a touchscreen only the keyboard does. */
 @layer utilities {
-  [data-quiet]:not(:hover, :focus-within),
-  [data-quiet]:not(:hover, :focus-within) * {
-    color: var(--color-faint);
+  @media (hover: hover) {
+    [data-quiet]:not(:hover, :focus-within),
+    [data-quiet]:not(:hover, :focus-within) * {
+      color: var(--color-faint);
+    }
+  }
+
+  @media (hover: none) {
+    [data-quiet]:not(:has(:focus-visible)),
+    [data-quiet]:not(:has(:focus-visible)) * {
+      color: var(--color-faint);
+    }
   }
 }
 

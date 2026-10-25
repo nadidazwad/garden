@@ -1,21 +1,37 @@
 import { useRef, type MouseEvent, type PointerEvent } from 'react'
 import type { Grove } from '../grove'
 
-// A press only becomes a drag once it has moved this far, so clicks still land.
-const THRESHOLD = 4
+// A press only becomes a drag once it has moved this far, so clicks still land. A fingertip wobbles more than a mouse.
+const THRESHOLD = { mouse: 4, touch: 10 }
 // Velocity older than this when the pointer lifts means it had stopped: no glide.
 const STALE_MS = 80
 
 /** Drag the view from anywhere, folders and files included, and let go to glide. */
 export function useDrag(grove: Grove, scale: number) {
-  const press = useRef<{ id: number; x: number; y: number; dragging: boolean; vx: number; vy: number; at: number } | null>(
-    null,
-  )
+  const press = useRef<{
+    id: number
+    x: number
+    y: number
+    slop: number
+    dragging: boolean
+    vx: number
+    vy: number
+    at: number
+  } | null>(null)
   const dragged = useRef(false)
 
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {
     if (event.button !== 0) return
-    press.current = { id: event.pointerId, x: event.clientX, y: event.clientY, dragging: false, vx: 0, vy: 0, at: event.timeStamp }
+    press.current = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      slop: event.pointerType === 'touch' ? THRESHOLD.touch : THRESHOLD.mouse,
+      dragging: false,
+      vx: 0,
+      vy: 0,
+      at: event.timeStamp,
+    }
     dragged.current = false
   }
 
@@ -26,7 +42,7 @@ export function useDrag(grove: Grove, scale: number) {
     const dy = event.clientY - p.y
     if (!p.dragging) {
       // Until the plant outgrows the view there is nowhere to drag to.
-      if (!grove.canPan || Math.hypot(dx, dy) < THRESHOLD) return
+      if (!grove.canPan || Math.hypot(dx, dy) < p.slop) return
       // Capturing reroutes the eventual click to the garden, so the folder under the press doesn't open.
       event.currentTarget.setPointerCapture(event.pointerId)
       event.currentTarget.dataset.dragging = ''

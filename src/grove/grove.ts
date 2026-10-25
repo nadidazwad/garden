@@ -72,9 +72,21 @@ interface Options {
    * bottom edge on it, and the view never sinks below it.
    */
   ground?: number
+  /** The plant fits the width of the view, so the view only moves up and down. */
+  fitWidth?: boolean
+  /** World px the view can rise above the plant, clear of anything pinned to the top of the screen. */
+  headroom?: number
+  /**
+   * Opening a folder closes any open sibling, so siblings can grow into the
+   * same room. The newly opened branch waits until the old one is back in.
+   */
+  exclusive?: boolean
 }
 
-export function createGrove<T>(spec: FolderSpec<T>, { still = false, ground }: Options = {}): Grove<T> {
+export function createGrove<T>(
+  spec: FolderSpec<T>,
+  { still = false, ground, fitWidth = false, headroom = MARGIN, exclusive = false }: Options = {},
+): Grove<T> {
   const world = layout(spec)
   const nodes = new Map<string, GroveNode<T>>(world.nodes.map((node) => [node.id, node]))
   // Children before parents, so a retracting branch sees its children's final growth.
@@ -169,14 +181,14 @@ export function createGrove<T>(spec: FolderSpec<T>, { still = false, ground }: O
   const cameraRange = () => {
     const [halfW, halfH] = [view[0] / 2, view[1] / 2]
     const right = bounds.maxX + MARGIN - halfW
-    const top = bounds.minY - MARGIN + halfH
+    const top = bounds.minY - headroom + halfH
     const bottom = bounds.maxY + MARGIN - halfH
     const [low, high] = top <= bottom ? [top, bottom] : [bottom, top]
     const floor = ground === undefined ? Infinity : ground - halfH
     return {
-      x: [leftmost(), Math.max(leftmost(), right)] as const,
+      x: [leftmost(), fitWidth ? leftmost() : Math.max(leftmost(), right)] as const,
       y: [Math.min(low, floor), Math.min(high, floor)] as const,
-      spills: { x: right > leftmost() + 1, y: top < bottom - 1 },
+      spills: { x: !fitWidth && right > leftmost() + 1, y: top < bottom - 1 },
     }
   }
 
@@ -210,7 +222,10 @@ export function createGrove<T>(spec: FolderSpec<T>, { still = false, ground }: O
     if (!node) return
     moveTo(id)
     if (node.kind === 'folder' && !expanded.has(id)) {
-      for (let at: GroveNode<T> | undefined = node; at; at = nodes.get(at.parent)) expanded.add(at.id)
+      for (let at: GroveNode<T> | undefined = node; at; at = nodes.get(at.parent)) {
+        if (exclusive) closeSiblings(at)
+        expanded.add(at.id)
+      }
       focused = id
       reframe()
       glide = [0, 0]
@@ -232,6 +247,21 @@ export function createGrove<T>(spec: FolderSpec<T>, { still = false, ground }: O
     }
     refresh()
   }
+
+  const closeSiblings = (node: GroveNode<T>) => {
+    for (const sibling of childFolders.get(node.parent) ?? []) {
+      if (sibling === node) continue
+      for (const folder of expanded) {
+        if (folder === sibling.id || folder.startsWith(`${sibling.id}/`)) expanded.delete(folder)
+      }
+    }
+  }
+
+  // An exclusive sibling still on its way back in.
+  const siblingOut = (id: string) =>
+    (childFolders.get(nodes.get(id)!.parent) ?? []).some(
+      (sibling) => sibling.id !== id && !expanded.has(sibling.id) && (growth.get(sibling.id) ?? 0) > 0,
+    )
 
   // A closing branch can't retract past a child folder whose branch is still out.
   const floorOf = (id: string) => {
@@ -345,6 +375,7 @@ export function createGrove<T>(spec: FolderSpec<T>, { still = false, ground }: O
           if (branch.id === ROOT_ID && clock < INTRO_DELAY && !still) continue
           // A deep link opens folders that haven't grown in yet; each waits for its own folder to show.
           if (branch.id !== ROOT_ID && !visible.has(branch.id)) continue
+          if (exclusive && branch.id !== ROOT_ID && siblingOut(branch.id)) continue
           if (still) g = end
           else if (g < end) {
             let tween = tweens.get(branch.id)

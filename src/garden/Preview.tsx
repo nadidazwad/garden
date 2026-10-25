@@ -9,6 +9,8 @@ interface Props {
   node: GroveNode<Entry>
   width: number
   height: number
+  /** On a phone the panel takes the whole width, bar a margin. */
+  narrow: boolean
   /** The location has moved on: shrink back into the file, then call `onGone`. */
   leaving: boolean
   onClose: () => void
@@ -24,7 +26,7 @@ const SHRINK = 'cubic-bezier(0.5, 0, 0.75, 0)'
  * shrinks back into it, so you never lose your place in the tree. One at a time;
  * the plant stays put behind it, with no dimming.
  */
-export function Preview({ node, width, height, leaving, onClose, onGone }: Props) {
+export function Preview({ node, width, height, narrow, leaving, onClose, onGone }: Props) {
   const panel = useRef<HTMLDivElement>(null)
   const entry = node.data
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -65,10 +67,10 @@ export function Preview({ node, width, height, leaving, onClose, onGone }: Props
 
   // Media fills as much of the screen as it can at its own shape; words get a reading measure.
   const chrome = 132
-  let frame = { width: Math.min(560, width - 48), height: 0 }
+  let frame = { width: narrow ? width - 32 : Math.min(560, width - 48), height: 0 }
   if (entry.kind !== 'text') {
     const ratio = aspect(node.id)
-    const maxWidth = Math.min(width * 0.74, 1180)
+    const maxWidth = narrow ? width - 32 : Math.min(width * 0.74, 1180)
     const maxHeight = height * 0.86 - chrome
     frame = { width: maxWidth, height: maxWidth / ratio }
     if (frame.height > maxHeight) frame = { width: maxHeight * ratio, height: maxHeight }
@@ -130,7 +132,7 @@ function TitleBar({ glyph, name, onClose }: { glyph: GlyphName; name: string; on
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="group flex size-28 cursor-pointer items-center justify-center rounded-[4px] text-muted outline-none hover:bg-plate hover:text-accent focus-visible:text-accent"
+        className="group flex size-28 cursor-pointer items-center justify-center rounded-[4px] max-sm:size-36 text-muted outline-none hover:bg-plate hover:text-accent focus-visible:text-accent"
       >
         <PixelIcon name="close" pixel={1.5} />
       </button>
