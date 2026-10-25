@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties, type WheelEvent } from 'react'
 import { createGrove, type Grove, type GroveNode } from '../grove'
 import { opensAs, type Entry, type Layout } from '../portfolio'
+import { useAddress } from './address.ts'
 import { CaseStudy, PAGE_IN } from './case/CaseStudy.tsx'
 import { Contact } from './Contact.tsx'
 import { labelArea } from './labels.ts'
@@ -8,7 +9,6 @@ import { Masthead } from './Masthead.tsx'
 import { Nodes } from './Nodes.tsx'
 import { Preview } from './Preview.tsx'
 import { useDrag } from './useDrag.ts'
-import { useLocationSync } from './useLocationSync.ts'
 import { useViewport, type Viewport } from './useViewport.ts'
 
 // three.js is ~1 MB; the page paints first and the plant grows once it arrives.
@@ -32,7 +32,7 @@ function Plot({ layout, viewport }: { layout: Layout; viewport: Viewport }) {
     }),
   )
   useSyncExternalStore(grove.subscribe, () => grove.version)
-  useLocationSync(grove)
+  useAddress(grove)
   const { masthead } = layout
   const [keepOut] = useState(() => [...grove.layout.nodes.map((node) => labelArea(node)), masthead.intro.box, masthead.time.box])
   const { width, height, scale, dpr } = viewport

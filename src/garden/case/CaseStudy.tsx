@@ -37,9 +37,23 @@ export function CaseStudy({ path, kicker, body, next, onClose }: Props) {
   const setViewing = (index: number | null) => setOpen(index === null ? null : { path, index })
   const open = (media: Media) => setViewing(pieces.indexOf(media))
 
+  // A reload while reading comes back to the same spot; any other arrival starts at the top.
   useEffect(() => {
-    page.current?.scrollTo(0, 0)
-    page.current?.focus()
+    const element = page.current
+    if (!element) return
+    element.scrollTo(0, reloaded?.path === path ? reloaded.top : 0)
+    // Only the arrival comes back; a microtask, so StrictMode's second run in dev still sees it.
+    queueMicrotask(() => (reloaded = null))
+    element.focus()
+    const keep = () => {
+      try {
+        sessionStorage.setItem(KEPT, JSON.stringify({ path, top: element.scrollTop }))
+      } catch {
+        // Storage can be off; the reload starts at the top.
+      }
+    }
+    window.addEventListener('pagehide', keep)
+    return () => window.removeEventListener('pagehide', keep)
   }, [path])
 
   // The page grows out of the middle of the screen, rounding off its corners as it fills.
@@ -99,6 +113,19 @@ export function CaseStudy({ path, kicker, body, next, onClose }: Props) {
     </div>
   )
 }
+
+const KEPT = 'case-study-scroll'
+
+/** Where the visitor was in a case study when they reloaded it, read once as the page loads. */
+let reloaded = (() => {
+  try {
+    const kept = JSON.parse(sessionStorage.getItem(KEPT) ?? 'null') as { path: string; top: number } | null
+    sessionStorage.removeItem(KEPT)
+    return kept
+  } catch {
+    return null
+  }
+})()
 
 type Run = { note: true; blocks: Block[] } | { note: false; block: Block }
 
