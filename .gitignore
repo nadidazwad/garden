@@ -25,7 +25,5 @@ dist-ssr
 
 # Fonts are licensed to the site, not to everyone who clones it; builds pull them in.
 public/fonts/
-# Encoded media lives in R2, never in git.
-media/
 .env*
 !.env.example

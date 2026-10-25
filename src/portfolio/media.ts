@@ -1,8 +1,8 @@
 import sizes from './media.json'
 
 // Media is named by its path in the tree: `/work/quickhajj/home.png` lives at
-// `work/quickhajj/home.avif` under the media base (R2 in production; the local
-// `media/` folder in development, filled by `pnpm media`). Case-study images
+// `public/media/work/quickhajj/home.avif`, filled by ~/Projects/azwad-assets and
+// served with the site (VITE_MEDIA_BASE can point it elsewhere). Case-study images
 // are named the same way, by a path of their own. `media.json` holds each
 // item's size, so frames can be laid out before anything loads.
 
