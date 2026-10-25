@@ -162,7 +162,7 @@ export const portfolio: FolderSpec<Entry> = {
               meta: 'Attar · 2026',
               alt: 'The Attar admin dashboard',
             }),
-            file('try-the-demo', [560, -600], 'right', link('https://nextjs-perfume-store.vercel.app')),
+            file('try-the-demo', [560, -600], 'right', link('https://nextjs-perfume-store.vercel.app/demo')),
             file('github', [700, -650], 'right', link('https://github.com/nadidazwad/nextjs-perfume-store')),
           ],
           'shop template',

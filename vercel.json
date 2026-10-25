@@ -1,9 +1,15 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [{ "source": "/((?!media/|sound/|fonts/|assets/).*)", "destination": "/index.html" }],
+  "rewrites": [
+    { "source": "/work/:project/case-study.md", "destination": "/share/:project.html" },
+    {
+      "source": "/((?!media/|sound/|fonts/|assets/|icons/|og/|share/|favicon|apple-touch-icon|site.webmanifest|robots.txt|sitemap.xml).*)",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
     {
-      "source": "/(media|sound)/(.*)",
+      "source": "/(media|sound|og|icons)/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     }
   ]

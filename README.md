@@ -11,10 +11,13 @@ I make websites, products and short films, mostly for businesses here: a Hajj ag
 - **The plant** started as a screen recording of a file tree growing like a vine. I rebuilt it from nothing in three.js: lit tubes and leaves, dithered onto a pixel grid that's locked to the world, so the pattern never crawls when you drag. The icons sit on the same grid, one icon pixel to a dither cell.
 - **The tree** (`src/grove/`) doesn't know three.js exists. It owns the growing, what's open and the camera, and the plant and the labels both read from it, so they move in the same frame.
 - **The case studies** are Markdown in `src/portfolio/writing/`, written in a small dialect of my own for deliverables, before/after sliders, drifting strips and numbers. `src/garden/case/parse.ts` lists the shapes.
+- **The sound** is made with [earshot](https://github.com/Leonxlnx/earshot), all of it rendered from code rather than recorded: a two-second welcome on kalimba, marimba and a bell, then cues that come from what the plant does. A folder knocks open on wood, each name that sprouts rings a marimba note a step higher than the last, and a branch knocks shut, each one heard from where it is on screen. Browsers keep a page silent until it's touched, so the welcome plays as the page lands where that's allowed, and on the first click everywhere else. The script that makes them lives outside this repo; what it makes is in `public/sound/`.
+- **The motion** stays on the pixel grid where it can: icons lift on hover and press flat into the page by exactly one pixel, and names grow out of their icons as the plant reaches them.
 - **The phone** gets a layout of its own. I placed it by hand in an editor that only runs in dev, at `/__overview/phone`.
+- **Share cards**: a link to the garden previews as the garden itself, and a link to a case study as that case study, with its own title, summary and card. The build writes a page per case study from its Markdown (`src/meta/`). The favicon is the N of PP Mondwest, square for square, in the accent blue.
 - **The screenshots and films** come from scripts that drive the live sites in a headless browser, filming them frame by frame and adding the camera moves. Those live outside this repo; what they make is in `public/media/`.
 
-I build with AI agents, which is why every commit here carries a Claude trailer. The taste, the direction and the final call are mine.
+I build with AI agents. The taste, the direction and the final call are mine.
 
 ## Running it
 
@@ -33,4 +36,6 @@ The code is MIT, so take whatever's useful. The work it shows isn't: the case st
 
 Type and layout after Finn Oliver Taylor.
 
-[nadidazwad@gmail.com](mailto:nadidazwad@gmail.com) · [X](https://x.com/nadidazwad) · [LinkedIn](https://www.linkedin.com/in/nadid-azwad-311833318)
+[nadidazwad@gmail.com](mailto:nadidazwad@gmail.com) · [LinkedIn](https://www.linkedin.com/in/nadidazwad/) · [GitHub](https://github.com/nadidazwad) · X: a new account, soon
+
+Live at [azwad-three.vercel.app](https://azwad-three.vercel.app).

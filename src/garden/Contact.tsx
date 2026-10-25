@@ -4,10 +4,11 @@ import { sound } from '../sound'
 
 const EMAIL = 'nadidazwad@gmail.com'
 
-const WAYS = [
+// X has no href yet: the new account is still to come, and it says so instead of linking.
+const WAYS: { label: string; href?: string }[] = [
   { label: EMAIL, href: `mailto:${EMAIL}` },
-  { label: 'x.com/nadidazwad', href: 'https://x.com/nadidazwad' },
-  { label: 'linkedin', href: 'https://www.linkedin.com/in/nadid-azwad-311833318' },
+  { label: 'x · new account soon' },
+  { label: 'linkedin', href: 'https://www.linkedin.com/in/nadidazwad/' },
   { label: 'github', href: 'https://github.com/nadidazwad' },
 ]
 
@@ -66,7 +67,7 @@ export function Contact({ open, onToggle, pixel }: Props) {
           const rise = WAYS.length - 1 - i
           return (
             <li
-              key={way.href}
+              key={way.label}
               className={`motion-safe:transition-[opacity,translate,filter] ${open ? 'duration-420 ease-out-expo' : 'duration-180 ease-in'}`}
               style={{
                 opacity: open ? 1 : 0,
@@ -75,19 +76,24 @@ export function Contact({ open, onToggle, pixel }: Props) {
                 transitionDelay: open ? `${50 + rise * STAGGER}ms` : `${i * 25}ms`,
               }}
             >
-              <a
-                href={way.href}
-                tabIndex={open ? 0 : -1}
-                {...(way.href.startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {})}
-                onPointerEnter={(event) => event.pointerType === 'mouse' && sound.play('hover', { pan: PAN })}
-                onClick={() => sound.play('link', { pan: PAN })}
-                className="halo group flex items-center gap-6 text-small text-ink outline-none transition-colors duration-150 hover:text-accent focus-visible:text-accent"
-              >
-                <span className="line-draw group-hover:line-drawn group-focus-visible:line-drawn">{way.label}</span>
-                <span className="text-muted transition-[color,translate] duration-200 group-hover:translate-x-2 group-hover:-translate-y-2 group-hover:text-accent">
-                  ↗
-                </span>
-              </a>
+              {way.href ? (
+                <a
+                  href={way.href}
+                  tabIndex={open ? 0 : -1}
+                  {...(way.href.startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {})}
+                  onPointerEnter={(event) => event.pointerType === 'mouse' && sound.play('hover', { pan: PAN })}
+                  onClick={() => sound.play('link', { pan: PAN })}
+                  className="halo group flex items-center gap-6 text-small text-ink outline-none transition-colors duration-150 hover:text-accent focus-visible:text-accent"
+                >
+                  <span className="line-draw group-hover:line-drawn group-focus-visible:line-drawn">{way.label}</span>
+                  <span className="text-muted transition-[color,translate] duration-200 group-hover:translate-x-2 group-hover:-translate-y-2 group-hover:text-accent">
+                    ↗
+                  </span>
+                </a>
+              ) : (
+                // Not a way yet: quieter, and nothing to click.
+                <span className="halo block text-small text-muted">{way.label}</span>
+              )}
             </li>
           )
         })}

@@ -1,8 +1,7 @@
 import { useEffect } from 'react'
 import { ROOT_ID, type Grove } from '../grove'
+import { titleOf as tabTitle } from '../meta'
 import { opensAs, type Entry } from '../portfolio'
-
-const NAME = 'Nadid Azwad'
 
 /** The address bar and its history, as far as the garden needs them. */
 export interface Address {
@@ -31,9 +30,10 @@ export function syncAddress(grove: Grove<Entry>, address: Address) {
     return opensAs(nodes.get(id)?.data) === 'page' ? id : null
   }
   const urlOf = (page: string | null) => (page ? encodeURI(page) : '/')
+  // The tab reads as the share card does: the case study's own title, or the site's.
   const titleOf = (page: string | null) => {
-    const node = page ? nodes.get(page) : undefined
-    return node ? `${nodes.get(node.parent)?.name ?? ''}/${node.name} — ${NAME}` : NAME
+    const data = page ? nodes.get(page)?.data : undefined
+    return tabTitle(data?.kind === 'case' ? data.body : undefined)
   }
   const decoded = () => {
     try {

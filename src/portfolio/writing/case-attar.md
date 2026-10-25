@@ -56,7 +56,7 @@ Attar is MIT-licensed on [GitHub](https://github.com/nadidazwad/nextjs-perfume-s
 
 ## Setup.
 
-Shop owners who'd rather not touch code can ask me to set it up for them, with their brand, products, delivery charges, bKash and Nagad numbers and their own domain. The request form is on the [demo](https://nextjs-perfume-store.vercel.app/get-your-store), and there's no payment until we've talked.
+Shop owners who'd rather not touch code can ask me to set it up for them, with their brand, products, delivery charges, bKash and Nagad numbers and their own domain. They can try the store's admin first in the [demo](https://nextjs-perfume-store.vercel.app/demo), and there's no payment until we've talked.
 
 {How many shops have asked so far, and what came of it.}
 
