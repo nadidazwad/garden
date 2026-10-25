@@ -161,10 +161,10 @@ interface IntroProps {
  * it again: the whole branch the phrase opened, back to how the plant stood.
  */
 function Intro({ grove, words, quiet, contact, onContact }: IntroProps) {
-  const opens = (path: string) => {
+  const opens = (path: string, whole = false) => {
     const id = path.replace(/\/+$/, '')
     const open = grove.isExpanded(id)
-    return { open, onClick: () => (open ? grove.close(`/${id.split('/')[1]}`) : grove.go(path)) }
+    return { open, onClick: () => (open ? grove.close(`/${id.split('/')[1]}`) : grove.go(path, { whole })) }
   }
   return (
     <p
@@ -173,7 +173,8 @@ function Intro({ grove, words, quiet, contact, onContact }: IntroProps) {
       style={{ width: w(words.box.maxX - words.box.minX), fontSize: w(words.size), lineHeight: w(words.leading) }}
     >
       Designer and engineer in Dhaka. I make <Phrase {...opens('/work/')}>websites, products</Phrase> and{' '}
-      <Phrase {...opens('/films/')}>short films</Phrase>. Right now I’m the{' '}
+      {/* The films are one branch to watch: it opens all the way up. */}
+      <Phrase {...opens('/films/', true)}>short films</Phrase>. Right now I’m the{' '}
       <Phrase {...opens('/work/stableconverse/')}>founding design engineer</Phrase> at StableConverse, an AI sales
       agent for shops in Bangladesh. I’m also open to{' '}
       {/* Marked so the hello folder's click-away doesn't shut it just before this click would. */}

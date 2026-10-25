@@ -270,6 +270,18 @@ describe('location', () => {
     expect(grove.location).toBe('/')
   })
 
+  it('can open a folder whole, every folder inside it too, and stay on the folder', () => {
+    const grove = createGrove(tree)
+    grove.go('/a/', { whole: true })
+    settle(grove)
+    expect(grove.location).toBe('/a')
+    expect(grove.isExpanded('/a/b')).toBe(true)
+    expect(grove.isVisible('/a/b/c.txt')).toBe(true)
+    // Closing it closes all of it.
+    grove.close('/a')
+    expect(grove.isExpanded('/a/b')).toBe(false)
+  })
+
   it('takes an unknown path to the nearest folder that exists', () => {
     const grove = createGrove(tree)
     grove.go('/a/nope/c.txt')

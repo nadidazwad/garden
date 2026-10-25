@@ -44,9 +44,10 @@ export interface Grove<T = unknown> {
   /**
    * Shows a path, as a link or the back button asks: opens the folders on the way, closes the
    * rest, and opens the file if it is one. Folders grow in turn, each once its own folder shows.
-   * An unknown path goes to the nearest folder that exists.
+   * An unknown path goes to the nearest folder that exists. `whole` opens every folder inside a
+   * folder too, and frames as much of all that as fits, the folder itself kept in view.
    */
-  go(path: string): void
+  go(path: string, options?: { whole?: boolean }): void
   pan(dx: number, dy: number): void
   /** Let go of a drag: the view glides on at this velocity (world px/s) and slows to a stop. */
   fling(vx: number, vy: number): void
@@ -113,6 +114,8 @@ export function createGrove<T>(
   let view = openingView
   let glide: Vec2 = [0, 0]
   let focused = ROOT_ID
+  // Whether the focused folder was opened with everything inside it.
+  let wholly = false
   let location = ROOT_ID
   let moved = false
   let bounds: Bounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 }
@@ -124,9 +127,28 @@ export function createGrove<T>(
   // The camera never shows where the trunk starts: the plant always enters from the left edge.
   const leftmost = () => world.branches.get(ROOT_ID)!.focus[0] + TRUNK_TUCK + view[0] / 2
 
+  /** Folders inside a folder, at any depth. */
+  const foldersIn = (id: string) => [...world.branches.keys()].filter((branch) => branch.startsWith(`${id}/`))
+
+  /** The middle of everything a folder holds, opened all the way down. */
+  const middleOf = (id: string): Vec2 => {
+    let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity]
+    for (const branch of [id, ...foldersIn(id)]) {
+      for (const [x, y] of world.branches.get(branch)!.path.points) {
+        ;[minX, minY, maxX, maxY] = [Math.min(minX, x), Math.min(minY, y), Math.max(maxX, x), Math.max(maxY, y)]
+      }
+    }
+    for (const node of world.nodes) {
+      if (!node.id.startsWith(`${id}/`)) continue
+      const [x, y] = node.at
+      ;[minX, minY, maxX, maxY] = [Math.min(minX, x), Math.min(minY, y), Math.max(maxX, x), Math.max(maxY, y)]
+    }
+    return [(minX + maxX) / 2, (minY + maxY) / 2]
+  }
+
   const focusOn = (id: string): Vec2 => {
     if (id === ROOT_ID) return [leftmost(), ground === undefined ? 0 : ground - view[1] / 2]
-    const [x, y] = world.branches.get(id)!.focus
+    const [x, y] = wholly ? middleOf(id) : world.branches.get(id)!.focus
     // Keep the opened folder itself in view, however the view is shaped.
     const [fx, fy] = nodes.get(id)!.at
     const reachX = view[0] / 2 - 48
@@ -196,11 +218,11 @@ export function createGrove<T>(
     }
   }
 
-  const within = (value: number, [low, high]: readonly [number, number]) => Math.min(high, Math.max(low, value))
+  const clamp = (value: number, [low, high]: readonly [number, number]) => Math.min(high, Math.max(low, value))
 
   const panTo = (x: number, y: number): Vec2 => {
     const range = cameraRange()
-    return [spill.x ? within(x, range.x) : camera[0], spill.y ? within(y, range.y) : camera[1]]
+    return [spill.x ? clamp(x, range.x) : camera[0], spill.y ? clamp(y, range.y) : camera[1]]
   }
 
   // Re-frame whenever what's open or the view changes.
@@ -209,7 +231,7 @@ export function createGrove<T>(
     const range = cameraRange()
     spill = range.spills
     const [x, y] = focusOn(focused)
-    target = [within(x, range.x), within(y, range.y)]
+    target = [clamp(x, range.x), clamp(y, range.y)]
   }
 
   reframe()
@@ -231,6 +253,7 @@ export function createGrove<T>(
         expanded.add(at.id)
       }
       focused = id
+      wholly = false
       reframe()
       glide = [0, 0]
     }
@@ -246,6 +269,7 @@ export function createGrove<T>(
         if (folder === id || folder.startsWith(`${id}/`)) expanded.delete(folder)
       }
       focused = node.parent
+      wholly = false
       reframe()
       glide = [0, 0]
     }
@@ -337,7 +361,7 @@ export function createGrove<T>(
       else open(id)
     },
 
-    go(path) {
+    go(path, { whole = false } = {}) {
       let id = path.length > 1 ? path.replace(/\/+$/, '') : ROOT_ID
       if (!id.startsWith('/')) id = `/${id}`
       while (id !== ROOT_ID && !nodes.has(id)) id = id.slice(0, id.lastIndexOf('/')) || ROOT_ID
@@ -345,6 +369,8 @@ export function createGrove<T>(
       const folder = !node ? ROOT_ID : node.kind === 'folder' ? id : node.parent
       const onTheWay = new Set([ROOT_ID])
       for (let at = nodes.get(folder); at; at = nodes.get(at.parent)) onTheWay.add(at.id)
+      wholly = whole && node?.kind === 'folder'
+      if (wholly) for (const inside of foldersIn(folder)) onTheWay.add(inside)
       for (const folder of expanded) if (!onTheWay.has(folder)) expanded.delete(folder)
       for (const folder of onTheWay) expanded.add(folder)
       focused = folder
