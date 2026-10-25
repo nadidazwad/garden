@@ -125,9 +125,9 @@ export const portfolio: FolderSpec<Entry> = {
             ),
             file('umrah-campaign.png', [290, -110], 'right', {
               kind: 'image',
-              caption: 'Posters for Umrah as a couple’s first journey after the wedding, in English and Bangla.',
+              caption: 'My poster for Umrah as a couple’s first journey after the wedding, beside a colleague’s in Bangla.',
               meta: 'QuickHajj · 2026',
-              alt: 'Umrah campaign posters in English and Bangla, side by side',
+              alt: 'My English Umrah poster beside a colleague’s Bangla one',
             }),
             file('home.mp4', [503, -121], 'right', {
               kind: 'video',
@@ -336,7 +336,7 @@ export const portfolio: FolderSpec<Entry> = {
             }),
             file('on-the-wall.jpg', [884, -18], 'right', {
               kind: 'image',
-              caption: 'An earlier home screen, on the wall.',
+              caption: 'The same home screen, on the wall.',
               meta: 'Nahwan OS · 2026',
               alt: 'A TV on a wall showing a custom home screen',
             }),

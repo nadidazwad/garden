@@ -14,8 +14,6 @@ Attar is one repo with everything a small shop needs:
 - **Admin** An order queue built around the confirmation call. ![The admin](/work/attar/admin.png)
 - **Demo sandbox** A private copy of the whole store for every visitor. ![Starting a demo store](/work/attar/case-study/demo-start.png)
 - **Phone shop** A tab bar, sheets and swipeable photos on phones. ![The shop on a phone](/work/attar/case-study/mobile-home.png)
-- **Deploy guides** Vercel with Neon, or Docker, for nothing.
-- **Setup service** I set it up for shops that would rather not code.
 
 ## Problem.
 
@@ -42,9 +40,8 @@ I designed the admin first, and its look became the system the storefront follow
 It's built around the confirmation call. Orders waiting for a call come first. Each order has a status timeline, a call log, notes, payment checks and courier details. A switch blocks customers who place fake orders, and new orders ping the team on Telegram or by email.
 
 :::strip
-![Product listing with perfume filters](/work/attar/case-study/listing.png) ![A product page](/work/attar/case-study/product.png) ![A product's notes pyramid](/work/attar/case-study/product-notes.png) ![Search suggestions](/work/attar/case-study/search-suggest.png) ![Checkout: name, phone and address](/work/attar/case-study/checkout.png) ![Order confirmed](/work/attar/case-study/order-confirmed.png)
-![An order, with its call log and payment](/work/attar/case-study/order-detail.png) ![The order queue](/work/attar/case-study/orders.png) ![The product editor](/work/attar/case-study/product-editor.png) ![Homepage sections, drag to reorder](/work/attar/case-study/homepage.png) ![Coupons](/work/attar/case-study/coupons.png) ![Review moderation](/work/attar/case-study/reviews.png)
-![The home page on a phone](/work/attar/case-study/mobile-home.png) ![A listing on a phone](/work/attar/case-study/mobile-listing.png) ![A product on a phone](/work/attar/case-study/mobile-product.png) ![Filters as a sheet](/work/attar/case-study/mobile-filters.png) ![The phone menu](/work/attar/case-study/mobile-menu.png) ![An order in the admin, on a phone](/work/attar/case-study/mobile-order-detail.png) ![The order queue on a phone](/work/attar/case-study/mobile-orders.png)
+![The home page on a phone](/work/attar/case-study/mobile-home.png) ![Product listing with perfume filters](/work/attar/case-study/listing.png) ![Filters as a sheet](/work/attar/case-study/mobile-filters.png) ![A product page](/work/attar/case-study/product.png) ![A product's notes pyramid](/work/attar/case-study/product-notes.png) ![A product on a phone](/work/attar/case-study/mobile-product.png) ![Search suggestions](/work/attar/case-study/search-suggest.png) ![A listing on a phone](/work/attar/case-study/mobile-listing.png) ![Checkout: name, phone and address](/work/attar/case-study/checkout.png) ![Order confirmed](/work/attar/case-study/order-confirmed.png)
+![An order, with its call log and payment](/work/attar/case-study/order-detail.png) ![An order in the admin, on a phone](/work/attar/case-study/mobile-order-detail.png) ![The order queue](/work/attar/case-study/orders.png) ![The product editor](/work/attar/case-study/product-editor.png) ![The order queue on a phone](/work/attar/case-study/mobile-orders.png) ![Homepage sections, drag to reorder](/work/attar/case-study/homepage.png) ![Coupons](/work/attar/case-study/coupons.png) ![The phone menu](/work/attar/case-study/mobile-menu.png) ![Review moderation](/work/attar/case-study/reviews.png)
 :::
 
 ## Demo.

@@ -11,10 +11,9 @@ QuickHajj plans Hajj and Umrah journeys from Dhaka. I design and build its websi
 For version two I made:
 
 - **Website** Packages, enquiries and a blog. ![The live homepage](/work/quickhajj/four-versions/v2-live.png)
-- **Bangla site** Its own copy and its own pages under /bn.
-- **Design system** The rules the site and its artwork follow.
-- **Umrah campaign** Posters for couples, in both languages. ![The Umrah campaign posters](/work/quickhajj/umrah-campaign.png)
-- **Enquiry form** Short, hard to spam, with WhatsApp to fall back on.
+- **Bangla site** Its own copy and its own pages under /bn. ![The Bangla homepage](/work/quickhajj/case-study/bangla.png)
+- **Umrah campaign** A poster for newlyweds, in English. ![My English poster beside a colleague's Bangla one](/work/quickhajj/umrah-campaign.png)
+- **Enquiry form** Short, hard to spam, with WhatsApp to fall back on. ![The enquiry form](/work/quickhajj/case-study/enquiry.png)
 
 ## Background.
 
@@ -52,18 +51,18 @@ The enquiry form is short and hard to abuse. Cloudflare Turnstile checks for bot
 
 ## Campaign.
 
-In late September the agency wanted to sell Umrah to newlyweds, as the first journey after the wedding. The posters had two rules. Don't say honeymoon, and don't say package.
+In late September the agency wanted to sell Umrah to newlyweds, as the first journey after the wedding. The brief had two rules. Don't say honeymoon, and don't say package.
 
-Most of the work was saying no. I threw out:
+I made the English poster, and most of the work was saying no. I threw out:
 
 - sandals beside the Kaaba, because nobody wears shoes where tawaf happens
 - a wedding at the Kaaba, because couples marry at home or in Madinah and travel after
 - a line built on "qubool", because it's a South Asian wedding word and Umrah draws couples from everywhere
 - a bride in a dress that didn't fit the occasion
 
-The Bangla poster shows a couple holding hands in Madinah, her hands gloved. The English one has them facing Masjid al-Haram, under "The walk after the wedding." On the site the poster takes the place of a decorative minaret, opens full size, and sends you to WhatsApp with the message already written in your language.
+What was left is a couple facing Masjid al-Haram in the brand's yellow, under "The walk after the wedding." A colleague made the Bangla poster, a couple holding hands in Madinah, her hands gloved. Side by side, you can see what keeping to the brand does. On the site the poster takes the place of a decorative minaret, opens full size, and sends you to WhatsApp with the message already written in your language.
 
-![The Umrah campaign posters in English and Bangla](/work/quickhajj/umrah-campaign.png)
+![My English poster beside a colleague's Bangla one](/work/quickhajj/umrah-campaign.png)
 
 ## Outcome.
 

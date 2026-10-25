@@ -13,9 +13,9 @@ As the founding design engineer I made these for the beta:
 - **Workspace** Every page a shop's team works in, rebuilt on the brand. ![The orders page](/work/stableconverse/workspace/orders.png)
 - **Inbox** Three columns, with take over and hand back. ![The inbox](/work/stableconverse/workspace/inbox.png)
 - **Landing page** The hero, a customer's view in Messenger, and pricing. ![The landing page](/work/stableconverse/landing.mp4)
-- **Olive and dark mode** The move off acid lime, and a second theme.
-- **AI replies** Handoff to the team, safer orders and a rewritten prompt.
-- **Test the AI** Test chats, suggested messages and an inspector.
+- **Olive and dark mode** The move off acid lime, and a second theme. ![The dashboard in dark mode](/work/stableconverse/case-study/dark.png)
+- **AI replies** Handoff to the team, safer orders and a rewritten prompt. ![The AI confirming an order on WhatsApp](/work/stableconverse/case-study/ai-replies.png)
+- **Test the AI** Test chats, suggested messages and an inspector. ![Test the AI, with messages to try](/work/stableconverse/case-study/test-the-ai.png)
 
 ## Background.
 
