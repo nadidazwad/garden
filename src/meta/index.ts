@@ -6,13 +6,13 @@
 import { parseCase } from '../garden/case/parse.ts'
 
 export const SITE = {
-  url: 'https://azwad-three.vercel.app',
+  url: 'https://nadidazwad.com',
   name: 'Nadid Azwad',
   title: 'Nadid Azwad · Designer and engineer in Dhaka',
   description:
     'Designer and engineer in Dhaka. I make websites, products and short films. Right now I’m the founding design engineer at StableConverse, an AI sales agent for shops in Bangladesh.',
   image: { path: '/og/garden.png', type: 'image/png', alt: 'Nadid Azwad’s portfolio: his work as a file tree, growing as a dithered plant over his name' },
-  email: 'nadidazwad@gmail.com',
+  email: 'hello@nadidazwad.com',
   profiles: ['https://www.linkedin.com/in/nadidazwad/', 'https://github.com/nadidazwad'],
   color: '#ffffff',
 }

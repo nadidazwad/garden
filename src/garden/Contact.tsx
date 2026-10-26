@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { PixelIcon } from '../icons'
 import { sound } from '../sound'
 
-const EMAIL = 'nadidazwad@gmail.com'
+const EMAIL = 'hello@nadidazwad.com'
 
 // X has no href yet: the new account is still to come, and it says so instead of linking.
 const WAYS: { label: string; href?: string }[] = [

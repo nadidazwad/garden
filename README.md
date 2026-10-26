@@ -36,6 +36,6 @@ The code is MIT, so take whatever's useful. The work it shows isn't: the case st
 
 Type and layout after Finn Oliver Taylor.
 
-[nadidazwad@gmail.com](mailto:nadidazwad@gmail.com) · [LinkedIn](https://www.linkedin.com/in/nadidazwad/) · [GitHub](https://github.com/nadidazwad) · X: a new account, soon
+[hello@nadidazwad.com](mailto:hello@nadidazwad.com) · [LinkedIn](https://www.linkedin.com/in/nadidazwad/) · [GitHub](https://github.com/nadidazwad) · X: a new account, soon
 
-Live at [azwad-three.vercel.app](https://azwad-three.vercel.app).
+Live at [nadidazwad.com](https://nadidazwad.com).

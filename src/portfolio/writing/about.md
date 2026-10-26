@@ -4,6 +4,6 @@ I design and build **websites, products and short films**, mostly for businesses
 
 I build with AI agents. **The taste, the direction and the final call are mine.**
 
-[nadidazwad@gmail.com](mailto:nadidazwad@gmail.com) · [LinkedIn](https://www.linkedin.com/in/nadidazwad/) · [GitHub](https://github.com/nadidazwad) · _X: a new account, soon_
+[hello@nadidazwad.com](mailto:hello@nadidazwad.com) · [LinkedIn](https://www.linkedin.com/in/nadidazwad/) · [GitHub](https://github.com/nadidazwad) · _X: a new account, soon_
 
 _Type and layout after Finn Oliver Taylor._
