@@ -149,7 +149,7 @@ export function head(page: Page) {
     meta('name', 'twitter:description', page.description),
     meta('name', 'twitter:image', image),
     meta('name', 'twitter:image:alt', page.image.alt),
-    // Icons: the N in a circle, as SVG where it's understood, with sharp bitmaps for the rest.
+    // Icons: the glowing seedling, as SVG where it's understood, with sharp bitmaps for the rest.
     `<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />`,
     `<link rel="icon" href="/favicon.svg" type="image/svg+xml" />`,
     `<link rel="apple-touch-icon" href="/apple-touch-icon.png" />`,
@@ -175,7 +175,7 @@ export function robots() {
   return `User-agent: *\nAllow: /\nDisallow: /__overview\n\nSitemap: ${SITE.url}/sitemap.xml\n`
 }
 
-/** For a home screen or an install: the name, the colours, and the N at every size it's asked for. */
+/** For a home screen or an install: the name, the colours, and the seedling at every size it's asked for. */
 export function manifest() {
   const icon = (src: string, sizes: string, purpose: string, type = 'image/png') => ({ src, sizes, type, purpose })
   return `${JSON.stringify(
