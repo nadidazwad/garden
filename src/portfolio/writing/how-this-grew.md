@@ -16,4 +16,6 @@ My friend **Redwan** asked me to make a game for his accounting club. Last year 
 
 ## grow-your-repo
 
-This one came to me out of nowhere: **any repo's file tree, grown as a plant** the way this site grows mine. It's my own idea and **I haven't built it yet**, so for now it's only a name on a branch.
+This one came to me out of nowhere: **any repo's file tree, grown as a plant** the way this site grows mine. **Now it's built.** Paste a link to a public GitHub repo and its tree grows in; open a folder and it grows a branch of its own.
+
+The hard part was placing it. On this site I placed every point of the plant by hand, but there the code has to place **any repo's tree, however big**. Each branch is a seeded walk that steers round the names already there, so the same repo always grows the same plant. The code is [on GitHub](https://github.com/nadidazwad/grow-your-repo).
