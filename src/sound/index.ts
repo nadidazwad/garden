@@ -4,5 +4,6 @@ import { createSound } from './sound.ts'
 
 export type { Cue } from './cues.ts'
 export type { PlayOptions, Sound } from './sound.ts'
+export { BEAT, createTune, type Tune } from './tune.ts'
 
 export const sound = createSound()

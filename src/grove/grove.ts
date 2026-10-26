@@ -30,6 +30,8 @@ export interface Grove<T = unknown> {
   readonly canPan: boolean
   /** Skip easing: growth and pans land at once. */
   readonly still: boolean
+  /** While a paced `go` still has folders to open, the time between their turns (s); otherwise 0. */
+  readonly pace: number
   growth(branchId: string): number
   isVisible(nodeId: string): boolean
   /** True while a folder's branch is out, including while it retracts. */
@@ -45,9 +47,13 @@ export interface Grove<T = unknown> {
    * Shows a path, as a link or the back button asks: opens the folders on the way, closes the
    * rest, and opens the file if it is one. Folders grow in turn, each once its own folder shows.
    * An unknown path goes to the nearest folder that exists. `whole` opens every folder inside a
-   * folder too, and frames as much of all that as fits, the folder itself kept in view.
+   * folder too (inside `/`, the whole plant), and frames as much of all that as fits, the folder
+   * itself kept in view. With a `pace` (s), those open one at a time instead, each on the first
+   * turn after its folder shows: nearest the trunk first, or, where only one sibling may be open,
+   * as a tour down the tree, each closing the last and the view following it. Any other opening
+   * or closing calls off the rest.
    */
-  go(path: string, options?: { whole?: boolean }): void
+  go(path: string, options?: { whole?: boolean; pace?: number }): void
   pan(dx: number, dy: number): void
   /** Let go of a drag: the view glides on at this velocity (world px/s) and slows to a stop. */
   fling(vx: number, vy: number): void
@@ -117,6 +123,10 @@ export function createGrove<T>(
   // Whether the focused folder was opened with everything inside it.
   let wholly = false
   let location = ROOT_ID
+  // Folders a paced `go` has still to open, nearest the trunk first, and when the next one's turn comes.
+  let queue: string[] = []
+  let pace = 0
+  let turn = 0
   let moved = false
   let bounds: Bounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 }
   let spill = { x: false, y: false }
@@ -127,8 +137,10 @@ export function createGrove<T>(
   // The camera never shows where the trunk starts: the plant always enters from the left edge.
   const leftmost = () => world.branches.get(ROOT_ID)!.focus[0] + TRUNK_TUCK + view[0] / 2
 
-  /** Folders inside a folder, at any depth. */
-  const foldersIn = (id: string) => [...world.branches.keys()].filter((branch) => branch.startsWith(`${id}/`))
+  const inside = (inner: string, id: string) => inner !== id && (id === ROOT_ID || inner.startsWith(`${id}/`))
+
+  /** Folders inside a folder, at any depth, in tree order. */
+  const foldersIn = (id: string) => [...world.branches.keys()].filter((branch) => inside(branch, id))
 
   /** The middle of everything a folder holds, opened all the way down. */
   const middleOf = (id: string): Vec2 => {
@@ -139,7 +151,7 @@ export function createGrove<T>(
       }
     }
     for (const node of world.nodes) {
-      if (!node.id.startsWith(`${id}/`)) continue
+      if (!inside(node.id, id)) continue
       const [x, y] = node.at
       ;[minX, minY, maxX, maxY] = [Math.min(minX, x), Math.min(minY, y), Math.max(maxX, x), Math.max(maxY, y)]
     }
@@ -147,7 +159,7 @@ export function createGrove<T>(
   }
 
   const focusOn = (id: string): Vec2 => {
-    if (id === ROOT_ID) return [leftmost(), ground === undefined ? 0 : ground - view[1] / 2]
+    if (id === ROOT_ID) return wholly ? middleOf(id) : [leftmost(), ground === undefined ? 0 : ground - view[1] / 2]
     const [x, y] = wholly ? middleOf(id) : world.branches.get(id)!.focus
     // Keep the opened folder itself in view, however the view is shaped.
     const [fx, fy] = nodes.get(id)!.at
@@ -246,23 +258,30 @@ export function createGrove<T>(
   const open = (id: string) => {
     const node = nodes.get(id)
     if (!node) return
+    queue = []
     moveTo(id)
     if (node.kind === 'folder' && !expanded.has(id)) {
-      for (let at: GroveNode<T> | undefined = node; at; at = nodes.get(at.parent)) {
-        if (exclusive) closeSiblings(at)
-        expanded.add(at.id)
-      }
-      focused = id
-      wholly = false
+      unfold(node)
       reframe()
       glide = [0, 0]
     }
     refresh()
   }
 
+  /** Opens a folder and the folders it's in, and frames it. */
+  const unfold = (node: GroveNode<T>) => {
+    for (let at: GroveNode<T> | undefined = node; at; at = nodes.get(at.parent)) {
+      if (exclusive) closeSiblings(at)
+      expanded.add(at.id)
+    }
+    focused = node.id
+    wholly = false
+  }
+
   const close = (id: string) => {
     const node = nodes.get(id)
     if (!node) return
+    queue = []
     if (location === id || location.startsWith(`${id}/`)) moveTo(node.parent)
     if (node.kind === 'folder' && expanded.has(id)) {
       for (const folder of expanded) {
@@ -344,10 +363,13 @@ export function createGrove<T>(
     get canPan() {
       return canPan
     },
+    get pace() {
+      return queue.length > 0 ? pace : 0
+    },
     growth: (id) => growth.get(id) ?? 0,
     isVisible: (id) => visible.has(id),
     isOpen: (id) => openIcons.has(id),
-    isExpanded: (id) => expanded.has(id),
+    isExpanded: (id) => expanded.has(id) || queue.includes(id),
 
     get location() {
       return location
@@ -361,7 +383,7 @@ export function createGrove<T>(
       else open(id)
     },
 
-    go(path, { whole = false } = {}) {
+    go(path, { whole = false, pace: every = 0 } = {}) {
       let id = path.length > 1 ? path.replace(/\/+$/, '') : ROOT_ID
       if (!id.startsWith('/')) id = `/${id}`
       while (id !== ROOT_ID && !nodes.has(id)) id = id.slice(0, id.lastIndexOf('/')) || ROOT_ID
@@ -369,10 +391,18 @@ export function createGrove<T>(
       const folder = !node ? ROOT_ID : node.kind === 'folder' ? id : node.parent
       const onTheWay = new Set([ROOT_ID])
       for (let at = nodes.get(folder); at; at = nodes.get(at.parent)) onTheWay.add(at.id)
-      wholly = whole && node?.kind === 'folder'
-      if (wholly) for (const inside of foldersIn(folder)) onTheWay.add(inside)
+      const within = whole && node?.kind !== 'file' ? foldersIn(folder) : []
+      const paced = every > 0 && within.length > 0
+      // A tour closes everything first and opens every folder again in turn.
+      const tour = paced && exclusive
+      if (!tour) for (const inner of within) onTheWay.add(inner)
+      wholly = whole && node?.kind !== 'file' && !tour
       for (const folder of expanded) if (!onTheWay.has(folder)) expanded.delete(folder)
-      for (const folder of onTheWay) expanded.add(folder)
+      const depth = (id: string) => id.split('/').length
+      queue = !paced ? [] : tour ? within : within.filter((inner) => !expanded.has(inner)).sort((a, b) => depth(a) - depth(b))
+      pace = every
+      turn = clock
+      for (const folder of onTheWay) if (!queue.includes(folder)) expanded.add(folder)
       focused = folder
       moveTo(id)
       reframe()
@@ -399,6 +429,19 @@ export function createGrove<T>(
 
     step(dt) {
       clock += dt
+      if (queue.length > 0 && clock >= turn) {
+        turn += pace
+        // A tour keeps to its order; otherwise whichever folder shows first goes first.
+        const next = exclusive ? (visible.has(queue[0]) ? 0 : -1) : queue.findIndex((id) => visible.has(id))
+        if (next >= 0) {
+          const node = nodes.get(queue.splice(next, 1)[0])!
+          if (exclusive) {
+            unfold(node)
+            moveTo(node.id)
+          } else expanded.add(node.id)
+          reframe()
+        }
+      }
       for (const branch of deepestFirst) {
         const end = branch.path.length
         let g = growth.get(branch.id)!

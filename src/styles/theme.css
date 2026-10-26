@@ -173,12 +173,20 @@
     [data-quiet]:not(:hover, :focus-within) * {
       color: var(--color-faint);
     }
+
+    [data-quiet]:not(:hover, :focus-within) .dither-fill {
+      opacity: 0;
+    }
   }
 
   @media (hover: none) {
     [data-quiet]:not(:has(:focus-visible)),
     [data-quiet]:not(:has(:focus-visible)) * {
       color: var(--color-faint);
+    }
+
+    [data-quiet]:not(:has(:focus-visible)) .dither-fill {
+      opacity: 0;
     }
   }
 }
@@ -198,6 +206,34 @@
 
 @utility line-drawn {
   --line-drawn: 100%;
+}
+
+/* Words filled with a dither instead of a flat colour: the image in --dither,
+   sized by --dither-size and placed by --dither-at, shows through the letters.
+   It fades out wherever words go quiet, so lay it over a plain copy of the
+   words, which takes the quiet grey like any other. */
+@utility dither-fill {
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  background-image: var(--dither);
+  background-size: var(--dither-size);
+  background-position: var(--dither-at);
+  background-repeat: repeat-x;
+  transition: opacity 500ms ease-out;
+}
+
+/* A line two cells of --dot tall under words, its cells lit in a checker, in
+   the current colour. Like `line-draw`, `line-drawn` wipes it in from the
+   start, and taking that away rubs it back out. */
+@utility dither-line {
+  height: calc(var(--dot) * 2);
+  background-image: conic-gradient(currentColor 25%, transparent 0 50%, currentColor 0 75%, transparent 0);
+  background-size: calc(var(--dot) * 2) calc(var(--dot) * 2);
+  clip-path: inset(0 calc(100% - var(--line-drawn, 0%)) 0 0);
+  transition:
+    clip-path 340ms var(--ease-out-expo),
+    color 500ms ease-out;
 }
 
 /* Text sitting on the plant: a page-coloured outline keeps it legible over leaves. */

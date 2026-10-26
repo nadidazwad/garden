@@ -9,6 +9,10 @@ export interface PlayOptions {
   pan?: number
   /** Seconds from now. */
   delay?: number
+  /** Bends it up or down, in semitones. */
+  semitones?: number
+  /** Already set in time (by a tune): played just when asked, never dropped or queued for crowding. */
+  exact?: boolean
 }
 
 export interface Sound {
@@ -121,14 +125,14 @@ export function createSound(): Sound {
     if (context?.state === 'suspended' && document.visibilityState === 'visible') void context.resume().catch(() => {})
   }
 
-  const play = (cue: Cue, { step = 0, gain = 1, pan = 0, delay = 0 }: PlayOptions = {}) => {
+  const play = (cue: Cue, { step = 0, gain = 1, pan = 0, delay = 0, semitones = 0, exact = false }: PlayOptions = {}) => {
     const spec: CueSpec = CUES[cue]
     if (!context || !master || voices >= VOICES || !audible(context)) return
     const now = context.currentTime
     let when = now + Math.max(0, delay)
     const gap = (spec.gap ?? 0) / 1000
     const previous = last.get(cue) ?? -Infinity
-    if (when - previous < gap) {
+    if (!exact && when - previous < gap) {
       // A run of tuned notes keeps its rhythm instead of losing notes; anything else that crowds in is dropped.
       if (!spec.tuned || previous + gap - now > QUEUE) return
       when = previous + gap
@@ -136,11 +140,12 @@ export function createSound(): Sound {
     const file = spec.tuned ? spec.files[Math.min(spec.files.length - 1, Math.max(0, Math.round(step)))] : take(cue, spec)
     const buffer = buffers.get(file)
     if (!buffer) return
-    last.set(cue, when)
+    last.set(cue, Math.max(previous, when))
 
     const source = context.createBufferSource()
     source.buffer = buffer
-    if (spec.wobble) source.playbackRate.value = 2 ** (((Math.random() * 2 - 1) * spec.wobble) / 1200)
+    const wobble = spec.wobble ? (Math.random() * 2 - 1) * spec.wobble : 0
+    if (wobble || semitones) source.playbackRate.value = 2 ** ((wobble + semitones * 100) / 1200)
     const level = context.createGain()
     level.gain.value = spec.gain * gain
     source.connect(level)

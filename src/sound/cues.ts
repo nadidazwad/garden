@@ -3,7 +3,7 @@
 // so the mix is set here and a level change never needs a re-encode.
 
 /** The sprouting notes, low to high: C major pentatonic, like the welcome tune. */
-const PENTATONIC = ['G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5', 'C6']
+export const PENTATONIC = ['G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5', 'C6']
 
 export interface CueSpec {
   /** Takes, picked at random so a repeat never sounds stamped; or, for a tuned cue, one per step. */
@@ -26,6 +26,8 @@ export const CUES = {
   sprout: { files: PENTATONIC.map((note) => `sprout-${note}`), gain: 0.16, gap: 55, tuned: true },
   /** The pointer passing over something that opens. */
   hover: { files: ['hover-1', 'hover-2', 'hover-3'], gain: 0.07, gap: 60, wobble: 80 },
+  /** The pointer finding the intro's "open": a question, which the plant's tune answers. */
+  hint: { files: ['hint'], gain: 0.16, gap: 400 },
   /** A preview growing out of its file, and back in. */
   peek: { files: ['peek'], gain: 0.34, gap: 80, wobble: 30 },
   unpeek: { files: ['unpeek'], gain: 0.24, gap: 80, wobble: 30 },

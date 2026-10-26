@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { ROOT_ID, type Grove, type GroveNode, type Vec2 } from '../grove'
 import { opensAs, type Entry } from '../portfolio'
-import { sound, type Cue, type PlayOptions } from '../sound'
+import { createTune, sound, type Cue, type PlayOptions, type Tune } from '../sound'
 import { toScreen, type View } from './view.ts'
 
 type Play = (cue: Cue, options?: PlayOptions) => void
@@ -13,9 +13,17 @@ type Play = (cue: Cue, options?: PlayOptions) => void
  * along its branch rings a note higher than the last, starting higher the
  * deeper the folder; a branch going back in knocks lower. A preview pops out
  * of its file and back in, and a case study comes in and goes out like paper.
- * `panAt` places a sound where its node is on screen.
+ * While a paced `go` opens the plant folder by folder, all of that is played as
+ * a tune, in time and in its chords, and goes home with a last chord once the
+ * last folder is open. `panAt` places a sound where its node is on screen;
+ * `clock` is the time (s) the tune keeps time by.
  */
-export function listenForSounds(grove: Grove<Entry>, play: Play, panAt: (at: Vec2) => number = () => 0) {
+export function listenForSounds(
+  grove: Grove<Entry>,
+  play: Play,
+  panAt: (at: Vec2) => number = () => 0,
+  clock: () => number = () => performance.now() / 1000,
+) {
   const nodes = new Map(grove.layout.nodes.map((node) => [node.id, node]))
   const folders = grove.layout.nodes.filter((node) => node.kind === 'folder')
   const shown = new Set(grove.layout.nodes.filter((node) => grove.isVisible(node.id)).map((node) => node.id))
@@ -28,6 +36,11 @@ export function listenForSounds(grove: Grove<Entry>, play: Play, panAt: (at: Vec
   const retracting = new Set<string>()
   const related = (a: string, b: string) => a === b || a.startsWith(`${b}/`) || b.startsWith(`${a}/`)
   let location = grove.location
+  let tune: Tune | null = null
+  const hear: Play = (cue, options = {}) => {
+    const placed = tune ? tune.place(cue, options, clock()) : options
+    if (placed) play(cue, placed)
+  }
 
   return grove.subscribe(() => {
     let opened: GroveNode<Entry> | undefined
@@ -38,6 +51,15 @@ export function listenForSounds(grove: Grove<Entry>, play: Play, panAt: (at: Vec
         opened ??= folder
       } else if (!now && open.has(folder.id)) open.delete(folder.id)
     }
+    if (tune && clock() > tune.over) tune = null
+    if (grove.pace > 0) {
+      // A new paced opening, even straight after the last one went home, starts a tune of its own.
+      if (!tune || tune.over < Infinity) tune = createTune()
+    } else if (tune && tune.over === Infinity) {
+      // It ends with a folder opening (the last of them, or one the visitor chose), and goes home; called off any other way, it stops.
+      if (opened) tune.resolve(clock()).forEach(([cue, options]) => play(cue, options))
+      else tune = null
+    }
     let went: GroveNode<Entry> | undefined
     for (const node of nodes.values()) {
       const now = grove.isVisible(node.id)
@@ -47,7 +69,7 @@ export function listenForSounds(grove: Grove<Entry>, play: Play, panAt: (at: Vec
         shown.add(node.id)
         out.set(node.parent, before + 1)
         for (const id of retracting) if (related(id, node.parent)) retracting.delete(id)
-        play('sprout', { step: depth(node.parent) + before, pan: panAt(node.at) })
+        hear('sprout', { step: depth(node.parent) + before, pan: panAt(node.at) })
       } else {
         shown.delete(node.id)
         out.set(node.parent, Math.max(0, before - 1))
@@ -56,8 +78,8 @@ export function listenForSounds(grove: Grove<Entry>, play: Play, panAt: (at: Vec
       }
     }
     // Opening one folder can close another; the opening is the one to hear.
-    if (opened) play('open', { pan: panAt(opened.at) })
-    else if (went) play('close', { pan: panAt(nodes.get(went.parent)?.at ?? went.at) })
+    if (opened) hear('open', { pan: panAt(opened.at) })
+    else if (went) hear('close', { pan: panAt(nodes.get(went.parent)?.at ?? went.at) })
 
     if (grove.location !== location) {
       const from = nodes.get(location)

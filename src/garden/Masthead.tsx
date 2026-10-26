@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { ROOT_ID, type Bounds, type Grove, type Vec2 } from '../grove'
 import type { Layout } from '../portfolio'
+import { sound } from '../sound'
 import { usePinned } from './usePinned.ts'
 import type { View } from './view.ts'
 
@@ -23,6 +24,8 @@ interface Props {
   view: View
   /** Where the layout puts the name, the intro and the time. */
   masthead: Layout['masthead']
+  /** Time (s) between folders when the intro's "open" opens them all. */
+  pace: number
   /** Whether the hello folder is open, which the last phrase of the intro toggles. */
   contact: boolean
   onContact: (open: boolean) => void
@@ -38,7 +41,7 @@ interface Props {
  * the intro and the time step back to grey; pointing at them brings their
  * colours back.
  */
-export function Masthead({ grove, view, masthead, contact, onContact }: Props) {
+export function Masthead({ grove, view, masthead, pace, contact, onContact }: Props) {
   const { name: title, intro, time } = masthead
   const crossing = useCrossing(grove, title.box)
   const away = grove.location !== ROOT_ID
@@ -76,7 +79,7 @@ export function Masthead({ grove, view, masthead, contact, onContact }: Props) {
         </h1>
       </Pinned>
       <Pinned grove={grove} view={view} at={[intro.box.minX, intro.box.minY]}>
-        <Intro grove={grove} words={intro} quiet={away} contact={contact} onContact={onContact} />
+        <Intro grove={grove} view={view} words={intro} quiet={away} pace={pace} contact={contact} onContact={onContact} />
       </Pinned>
       <Pinned grove={grove} view={view} at={[time.box.minX, time.box.minY]}>
         <Clock words={time} quiet={away} />
@@ -150,8 +153,10 @@ type Words = Layout['masthead']['intro']
 
 interface IntroProps {
   grove: Grove<unknown>
+  view: View
   words: Words
   quiet: boolean
+  pace: number
   contact: boolean
   onContact: (open: boolean) => void
 }
@@ -159,13 +164,16 @@ interface IntroProps {
 /**
  * The intro's phrases each open a part of the plant, and a second click closes
  * it again: the whole branch the phrase opened, back to how the plant stood.
+ * "open" opens all of it, a folder at a time, and a second click closes it all.
  */
-function Intro({ grove, words, quiet, contact, onContact }: IntroProps) {
+function Intro({ grove, view, words, quiet, pace, contact, onContact }: IntroProps) {
   const opens = (path: string, whole = false) => {
     const id = path.replace(/\/+$/, '')
     const open = grove.isExpanded(id)
     return { open, onClick: () => (open ? grove.close(`/${id.split('/')[1]}`) : grove.go(path, { whole })) }
   }
+  const folders = useMemo(() => grove.layout.nodes.filter((node) => node.kind === 'folder').map((node) => node.id), [grove])
+  const blooming = grove.pace > 0 || folders.every((id) => grove.isExpanded(id))
   return (
     <p
       className="pointer-events-auto text-body transition-colors duration-500"
@@ -176,7 +184,14 @@ function Intro({ grove, words, quiet, contact, onContact }: IntroProps) {
       {/* The films are one branch to watch: it opens all the way up. */}
       <Phrase {...opens('/films/', true)}>short films</Phrase>. Right now I’m the{' '}
       <Phrase {...opens('/work/stableconverse/')}>founding design engineer</Phrase> at StableConverse, an AI sales
-      agent for shops in Bangladesh. I’m also open to{' '}
+      agent for shops in Bangladesh. I’m also{' '}
+      <Bloom
+        open={blooming}
+        size={words.size * view.scale}
+        dpr={view.dpr}
+        onClick={() => (blooming ? grove.go('/') : grove.go('/', { whole: true, pace }))}
+      />{' '}
+      to{' '}
       {/* Marked so the hello folder's click-away doesn't shut it just before this click would. */}
       <Phrase open={contact} onClick={() => onContact(!contact)} accent contact>
         a few client projects a year
@@ -209,6 +224,62 @@ function Phrase({ children, open, accent, contact, onClick }: PhraseProps) {
       {children}
     </button>
   )
+}
+
+/**
+ * "open", in the blossoms' blues, dithered: the word the whole plant hides
+ * behind. Under the pointer it rings a question and draws a dithered line under
+ * itself, which stays while the plant is opening or all open.
+ */
+function Bloom({ open, size, dpr, onClick }: { open: boolean; size: number; dpr: number; onClick: () => void }) {
+  const fill = useMemo(() => {
+    // The plant's cells would be a third of a letter; at one CSS px, in whole device px, the dither reads as a dither.
+    const dot = Math.max(1, Math.round(dpr)) / dpr
+    // The blues run from the top of the x-height (0.375 em down) to the foot of the p (1.125 em), with a hair to spare.
+    const rows = Math.round((0.8 * size) / dot)
+    return {
+      '--dot': `${dot}px`,
+      '--dither': blossom(rows),
+      '--dither-size': `${4 * dot}px ${rows * dot}px`,
+      '--dither-at': `0 ${Math.round((0.34 * size) / dot) * dot}px`,
+    } as CSSProperties
+  }, [size, dpr])
+  return (
+    <button
+      type="button"
+      aria-expanded={open}
+      onClick={onClick}
+      onPointerEnter={(event) => event.pointerType === 'mouse' && sound.play('hint')}
+      className="group relative inline-block cursor-pointer outline-none"
+      style={fill}
+    >
+      <span className="text-transparent transition-colors duration-500">open</span>
+      <span aria-hidden className="absolute inset-0">
+        <span className="dither-fill">open</span>
+      </span>
+      <span
+        aria-hidden
+        className={`dither-line absolute inset-x-0 bottom-0 text-accent group-hover:line-drawn group-focus-visible:line-drawn ${open ? 'line-drawn' : ''}`}
+      />
+    </button>
+  )
+}
+
+/** The blossoms' blues, sky at the top to navy at the bottom, through a 4×4 Bayer matrix: an image four cells wide and `rows` tall. */
+function blossom(rows: number) {
+  const blues = ['#87ceeb', '#2e73bf', '#1c3f6b']
+  const bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
+  let cells = ''
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < 4; x++) {
+      const t = ((y + 0.5) / rows) * (blues.length - 1)
+      const i = Math.min(blues.length - 2, Math.floor(t))
+      const fill = t - i > (bayer[(y % 4) * 4 + x] + 0.5) / 16 ? blues[i + 1] : blues[i]
+      cells += `<rect x="${x}" y="${y}" width="1" height="1" fill="${fill}"/>`
+    }
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 ${rows}" shape-rendering="crispEdges">${cells}</svg>`
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
 }
 
 const DHAKA = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dhaka', hour: 'numeric', minute: '2-digit', hour12: true })

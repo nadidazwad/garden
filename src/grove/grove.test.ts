@@ -282,6 +282,58 @@ describe('location', () => {
     expect(grove.isExpanded('/a/b')).toBe(false)
   })
 
+  it('can open the whole plant a folder a turn, each once it shows, until something else is opened or closed', () => {
+    const grove = createGrove(tree)
+    settle(grove)
+    grove.go('/', { whole: true, pace: 0.5 })
+    expect(grove.location).toBe('/')
+    expect(grove.isExpanded('/a/b')).toBe(true)
+    const opened = new Map<string, number>()
+    for (let frame = 1; frame <= 360; frame++) {
+      grove.step(1 / 60)
+      for (const id of ['/a', '/a/b']) if (grove.isOpen(id) && !opened.has(id)) opened.set(id, frame / 60)
+    }
+    expect(opened.get('/a')).toBeCloseTo(1 / 60)
+    // b/ waits for its turn after it shows: on the beat, a whole number of turns after a/.
+    const turns = (opened.get('/a/b')! - opened.get('/a')!) / 0.5
+    expect(turns).toBeGreaterThanOrEqual(1)
+    expect(turns - Math.round(turns)).toBeCloseTo(0)
+    expect(grove.pace).toBe(0)
+
+    grove.go('/')
+    settle(grove)
+    grove.go('/', { whole: true, pace: 0.5 })
+    expect(grove.pace).toBe(0.5)
+    grove.step(1 / 60)
+    grove.close('/a')
+    settle(grove)
+    expect(grove.pace).toBe(0)
+    expect(grove.isExpanded('/a/b')).toBe(false)
+  })
+
+  it('tours the plant where only one sibling may be open: down the tree, each folder closing the last', () => {
+    // Root ─┬─ a/ ── b/ ── c.txt
+    //       └─ e/ ── f.txt
+    const siblings: FolderSpec = {
+      ...tree,
+      children: [
+        tree.children[0],
+        { name: 'e', at: [150, -20], label: 'right', branch: { path: [[155, -100], [150, -200]] }, children: [{ name: 'f.txt', at: [150, -150], label: 'right' }] },
+      ],
+    }
+    const grove = createGrove(siblings, { exclusive: true })
+    settle(grove)
+    grove.go('/', { whole: true, pace: 0.5 })
+    const toured: string[] = []
+    for (let frame = 0; frame < 600; frame++) {
+      grove.step(1 / 60)
+      if (grove.location !== (toured.at(-1) ?? '/')) toured.push(grove.location)
+    }
+    expect(toured).toEqual(['/a', '/a/b', '/e'])
+    expect(grove.isOpen('/a')).toBe(false)
+    expect(grove.isVisible('/e/f.txt')).toBe(true)
+  })
+
   it('takes an unknown path to the nearest folder that exists', () => {
     const grove = createGrove(tree)
     grove.go('/a/nope/c.txt')

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createGrove, type FolderSpec, type Grove } from '../grove'
 import type { Entry } from '../portfolio'
-import type { Cue, PlayOptions } from '../sound'
+import { BEAT, type Cue, type PlayOptions } from '../sound'
 import { listenForSounds } from './sounds.ts'
 
 // Root ─┬─ a/ ─┬─ b.png
@@ -77,5 +77,38 @@ describe('the plant’s sounds', () => {
     settle(grove)
     grove.close('/a/d.md')
     expect(cues().filter((cue) => cue !== 'sprout' && cue !== 'open')).toEqual(['peek', 'unpeek', 'page', 'pageOut'])
+  })
+
+  it('plays the plant opening folder by folder as a tune: knocks on the beat, names on the sixteenths, in C, home at the end', () => {
+    const grove = createGrove(tree)
+    settle(grove)
+    let clock = 0
+    // The sprout files, G4 to C6, as MIDI notes.
+    const FILES = [67, 69, 72, 74, 76, 79, 81, 84]
+    const heard: { cue: Cue; at: number; note: number }[] = []
+    listenForSounds(
+      grove,
+      (cue, { delay = 0, step = 0, semitones = 0 } = {}) => heard.push({ cue, at: clock + delay, note: FILES[step] + semitones }),
+      undefined,
+      () => clock,
+    )
+    grove.go('/', { whole: true, pace: BEAT })
+    for (let frame = 0; frame < 600; frame++) {
+      clock += 1 / 60
+      grove.step(1 / 60)
+    }
+    const start = heard.find(({ cue }) => cue === 'open')!.at
+    const offGrid = (at: number, grid: number) => Math.abs((at - start) / grid - Math.round((at - start) / grid)) * grid
+    const knocks = heard.filter(({ cue }) => cue === 'open')
+    const notes = heard.filter(({ cue }) => cue === 'sprout')
+    // A folder each beat (a/, f/ once it shows), then one more to come home on.
+    expect(knocks).toHaveLength(3)
+    knocks.forEach(({ at }) => expect(offGrid(at, BEAT)).toBeLessThan(1 / 60))
+    notes.forEach(({ note }) => expect([0, 2, 4, 5, 7, 9, 11]).toContain(note % 12))
+    // Home is a C chord on a bar line, rolled up from it.
+    const home = Math.max(...knocks.map(({ at }) => at))
+    expect(offGrid(home, 4 * BEAT)).toBeLessThan(1e-9)
+    notes.filter(({ at }) => at < home).forEach(({ at }) => expect(offGrid(at, BEAT / 4)).toBeLessThan(1 / 60))
+    expect(notes.filter(({ at }) => at >= home && at < home + BEAT / 2).map(({ note }) => note)).toEqual([72, 76, 79, 84])
   })
 })

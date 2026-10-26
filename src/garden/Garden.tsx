@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties, type WheelEvent } from 'react'
 import { createGrove, type Grove, type GroveNode } from '../grove'
 import { opensAs, type Entry, type Layout } from '../portfolio'
-import { sound } from '../sound'
+import { BEAT, sound } from '../sound'
 import { useAddress } from './address.ts'
 import { CaseStudy, PAGE_IN } from './case/CaseStudy.tsx'
 import { Contact } from './Contact.tsx'
@@ -69,7 +69,15 @@ function Plot({ layout, viewport }: { layout: Layout; viewport: Viewport }) {
         {...drag}
         onWheel={scroll}
       >
-        <Masthead grove={grove} view={view} masthead={masthead} contact={contact} onContact={setContact} />
+        <Masthead
+          grove={grove}
+          view={view}
+          masthead={masthead}
+          // A folder a beat; where they're toured one at a time, one every other beat, so each has time to show.
+          pace={layout.exclusive ? 2 * BEAT : BEAT}
+          contact={contact}
+          onContact={setContact}
+        />
         <div className="pointer-events-none absolute inset-0">
           <Suspense fallback={null}>
             <Scene grove={grove} keepOut={keepOut} scale={scale} dpr={dpr} paused={covered} />
