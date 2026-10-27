@@ -1,5 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "azwad-three.vercel.app" }],
+      "destination": "https://nadidazwad.com/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/work/:project/case-study.md", "destination": "/share/:project.html" },
     {
