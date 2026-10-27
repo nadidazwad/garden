@@ -1,8 +1,9 @@
+import { readFileSync } from 'node:fs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
-import { CASES, casePage, head, HOME, siteFiles } from './src/meta/index.ts'
+import { CASES, casePage, caseWords, head, HOME, homeWords, siteFiles } from './src/meta/index.ts'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -10,16 +11,23 @@ export default defineConfig({
 })
 
 const HEAD = /<!-- head -->[\s\S]*?<!-- \/head -->/
+const WORDS = /<!-- words -->[\s\S]*?<!-- \/words -->/
+
+/** A file in src/portfolio/writing/. A declaration, so the plugins above can call it. */
+function writing(source: string) {
+  return readFileSync(new URL(`./src/portfolio/writing/${source}`, import.meta.url), 'utf8')
+}
 
 /**
  * Writes the page's head (title, description, share card, icons, structured
- * data) from src/meta into index.html. The build also writes a copy of the page
- * per case study with that study's own head, which vercel.json serves at its
- * address, so a link to one previews as itself; and the sitemap, robots.txt and
- * manifest, which dev serves too.
+ * data) and its words from src/meta into index.html. The build also writes a
+ * copy of the page per case study with that study's own head and words, which
+ * vercel.json serves at its address, so a link to one previews and reads as
+ * itself; and the sitemap, robots.txt and manifest, which dev serves too.
  */
 function meta(): Plugin {
   const files = siteFiles()
+  const cases = CASES.map((share) => ({ share, body: writing(share.source) }))
   let outDir = 'dist'
   let building = false
   return {
@@ -29,7 +37,9 @@ function meta(): Plugin {
       building = config.command === 'build'
     },
     transformIndexHtml(html) {
-      return html.replace('<!-- head -->', `<!-- head -->\n    ${head(HOME)}\n    <!-- /head -->`)
+      return html
+        .replace('<!-- head -->', `<!-- head -->\n    ${head(HOME)}\n    <!-- /head -->`)
+        .replace('<!-- words -->', () => `<!-- words -->\n${homeWords(writing('about.md'), cases)}\n<!-- /words -->`)
     },
     configureServer(server) {
       for (const [path, body] of Object.entries(files)) server.middlewares.use(path, (_, response) => response.end(body))
@@ -38,11 +48,11 @@ function meta(): Plugin {
       if (!building) return
       const page = await readFile(`${outDir}/index.html`, 'utf8')
       await mkdir(`${outDir}/share`, { recursive: true })
-      for (const share of CASES) {
-        const body = await readFile(new URL(`./src/portfolio/writing/${share.source}`, import.meta.url), 'utf8')
+      for (const { share, body } of cases) {
         const project = share.path.split('/')[2]
         const own = `<!-- head -->\n    ${head(casePage(share, body))}\n    <!-- /head -->`
-        await writeFile(`${outDir}/share/${project}.html`, page.replace(HEAD, own))
+        const words = `<!-- words -->\n${caseWords(body)}\n<!-- /words -->`
+        await writeFile(`${outDir}/share/${project}.html`, page.replace(HEAD, () => own).replace(WORDS, () => words))
       }
       for (const [path, body] of Object.entries(files)) await writeFile(`${outDir}${path}`, body)
     },

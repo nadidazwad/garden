@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { EntrySpec } from '../grove'
 import { portfolio, type Entry } from '../portfolio'
-import { CASES } from '.'
+import { CASES, caseWords, plain } from '.'
 
 /** Every case study in the tree, by its path. */
 function casesIn(children: EntrySpec<Entry>[] = portfolio.children, at = ''): { path: string; body: string }[] {
@@ -26,6 +26,26 @@ describe('share cards', () => {
       // The build writes share/<project>.html; the first rewrite serves it at the case study's own address.
       expect(study.path).toMatch(/^\/work\/[^/]+\/case-study\.md$/)
       expect(rewrites[0]).toEqual({ source: '/work/:project/case-study.md', destination: '/share/:project.html' })
+    }
+  })
+})
+
+describe('words', () => {
+  it('gives readers that skip the script every line a case study says, all but its pictures', () => {
+    for (const study of casesIn()) {
+      const words = caseWords(study.body)
+        .replace(/<[^>]+>/g, '')
+        .replace(/&quot;/g, '"')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+      const prose = study.body
+        .replace(/^:::\w+$[\s\S]*?^:::$/gm, '')
+        .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+        .split(/\n|\|/)
+        .map((line) => plain(line.replace(/^\s*(#+|-|>)\s*/, '')))
+        .filter(Boolean)
+      for (const line of prose) expect(words).toContain(line)
     }
   })
 })

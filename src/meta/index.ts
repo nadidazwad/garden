@@ -1,9 +1,10 @@
 // How the site presents itself to everything outside it: the page's head
-// (title, description, share card, icons, structured data), each case study's
-// own share card, the tab titles, and the sitemap. The build writes the head
-// into index.html and a copy per case study (see vite.config.ts); the garden
-// uses the titles. Plain data and strings only, so the build can load it.
-import { parseCase } from '../garden/case/parse.ts'
+// (title, description, share card, icons, structured data), its words for
+// readers that don't run it, each case study's own share card, the tab titles,
+// and the sitemap. The build writes the head and words into index.html and a
+// copy per case study (see vite.config.ts); the garden uses the titles. Plain
+// data and strings only, so the build can load it.
+import { parseCase, type Block } from '../garden/case/parse.ts'
 
 export const SITE = {
   url: 'https://nadidazwad.com',
@@ -162,6 +163,62 @@ export function head(page: Page) {
     ...SITE.profiles.map((profile) => `<link rel="me" href="${profile}" />`),
     `<script type="application/ld+json">${graph}</script>`,
   ].join('\n    ')
+}
+
+// A page's words as plain HTML, for whatever reads it without running it: AI
+// assistants fetching it, link readers, a browser with script off. Those
+// readers drop <noscript>, so the words go in #root, where the garden replaces
+// them as it starts; until then index.html keeps them out of sight.
+
+/** The site's inline Markdown as HTML: links kept, **phrases** in <b>. */
+const inline = (markdown: string) =>
+  escape(markdown)
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/(^|\W)_(.+?)_(?=\W|$)/g, '$1$2')
+const list = (items: string[]) => `<ul>${items.map((item) => `<li>${item}</li>`).join('')}</ul>`
+const paragraphs = (markdown: string) =>
+  markdown
+    .trim()
+    .split(/\n\s*\n/)
+    .map((chunk) => `<p>${inline(chunk.replace(/\s*\n\s*/g, ' '))}</p>`)
+
+/** The garden's words: the intro, the case studies, and about.txt. */
+export function homeWords(about: string, cases: { share: CaseShare; body: string }[]) {
+  const studies = cases.map(({ share, body }) => {
+    const { title, summary } = caseMeta(body)
+    return `<a href="${share.path}">${escape(title)}</a>${summary ? `. ${escape(summary)}` : ''}`
+  })
+  return [`<h1>${SITE.name}</h1>`, `<p>${escape(SITE.description)}</p>`, '<h2>Case studies</h2>', list(studies), ...paragraphs(about)].join('\n')
+}
+
+/** A case study's words, everything but its pictures and films, signed. */
+export function caseWords(body: string) {
+  const doc = parseCase(body)
+  const block = (each: Block): string[] => {
+    const lead = (title: string, rest: string) => `<b>${inline(title)}</b> ${inline(rest)}`
+    switch (each.kind) {
+      case 'text':
+        return [`<p>${inline(each.text)}</p>`]
+      case 'list':
+        return [list(each.items.map(inline))]
+      case 'terms':
+        return [...(each.intro ? [`<p>${inline(each.intro)}</p>`] : []), list(each.items.map((item) => lead(item.term, item.body)))]
+      case 'threads':
+        return [list(each.items.map((item) => lead(item.title, item.body)))]
+      case 'stats':
+        return [list(each.items.map((item) => lead(item.value, `${item.label} ${item.body}`)))]
+      default:
+        return []
+    }
+  }
+  return [
+    ...(doc.kicker ? [`<p>${inline(doc.kicker)}</p>`] : []),
+    `<h1>${inline(doc.title)}</h1>`,
+    ...(doc.summary ? [`<p>${inline(doc.summary)}</p>`] : []),
+    ...doc.sections.flatMap((section) => [...(section.label ? [`<h2>${inline(section.label)}</h2>`] : []), ...section.blocks.flatMap(block)]),
+    `<p>A case study by <a href="/">${SITE.name}</a>, a designer and engineer in Dhaka. <a href="mailto:${SITE.email}">${SITE.email}</a></p>`,
+  ].join('\n')
 }
 
 /** Every address worth finding: the garden, and each case study. */
