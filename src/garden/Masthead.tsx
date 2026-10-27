@@ -37,14 +37,11 @@ interface Props {
  * All three are set in the world, so they pan with the plant. When a branch
  * is about to grow across the name, the name shrinks toward its bottom left
  * corner to make room until the branch goes, and once it leaves the screen a
- * small one drops in at the top left. While the visitor is off in the folders,
- * the intro and the time step back to grey; pointing at them brings their
- * colours back.
+ * small one drops in at the top left.
  */
 export function Masthead({ grove, view, masthead, pace, contact, onContact }: Props) {
   const { name: title, intro, time } = masthead
   const crossing = useCrossing(grove, title.box)
-  const away = grove.location !== ROOT_ID
   const name = useRef<HTMLHeadingElement>(null)
   const nameShows = useOnScreen(name, NAME_GONE)
   const { size, stacked } = title
@@ -79,10 +76,10 @@ export function Masthead({ grove, view, masthead, pace, contact, onContact }: Pr
         </h1>
       </Pinned>
       <Pinned grove={grove} view={view} at={[intro.box.minX, intro.box.minY]}>
-        <Intro grove={grove} view={view} words={intro} quiet={away} pace={pace} contact={contact} onContact={onContact} />
+        <Intro grove={grove} view={view} words={intro} pace={pace} contact={contact} onContact={onContact} />
       </Pinned>
       <Pinned grove={grove} view={view} at={[time.box.minX, time.box.minY]}>
-        <Clock words={time} quiet={away} />
+        <Clock words={time} />
       </Pinned>
     </>
   )
@@ -155,7 +152,6 @@ interface IntroProps {
   grove: Grove<unknown>
   view: View
   words: Words
-  quiet: boolean
   pace: number
   contact: boolean
   onContact: (open: boolean) => void
@@ -166,7 +162,7 @@ interface IntroProps {
  * it again: the whole branch the phrase opened, back to how the plant stood.
  * "open" opens all of it, a folder at a time, and a second click closes it all.
  */
-function Intro({ grove, view, words, quiet, pace, contact, onContact }: IntroProps) {
+function Intro({ grove, view, words, pace, contact, onContact }: IntroProps) {
   const opens = (path: string, whole = false) => {
     const id = path.replace(/\/+$/, '')
     const open = grove.isExpanded(id)
@@ -176,8 +172,7 @@ function Intro({ grove, view, words, quiet, pace, contact, onContact }: IntroPro
   const blooming = grove.pace > 0 || folders.every((id) => grove.isExpanded(id))
   return (
     <p
-      className="pointer-events-auto text-body transition-colors duration-500"
-      data-quiet={quiet ? '' : undefined}
+      className="pointer-events-auto text-body"
       style={{ width: w(words.box.maxX - words.box.minX), fontSize: w(words.size), lineHeight: w(words.leading) }}
     >
       Designer and engineer in Dhaka. I make <Phrase {...opens('/work/')}>websites, products</Phrase> and{' '}
@@ -253,7 +248,7 @@ function Bloom({ open, size, dpr, onClick }: { open: boolean; size: number; dpr:
       className="group relative inline-block cursor-pointer outline-none"
       style={fill}
     >
-      <span className="text-transparent transition-colors duration-500">open</span>
+      <span className="text-transparent">open</span>
       <span aria-hidden className="absolute inset-0">
         <span className="dither-fill">open</span>
       </span>
@@ -285,7 +280,7 @@ function blossom(rows: number) {
 const DHAKA = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dhaka', hour: 'numeric', minute: '2-digit', hour12: true })
 
 /** The time where I am, kept current. */
-function Clock({ words, quiet }: { words: Words; quiet: boolean }) {
+function Clock({ words }: { words: Words }) {
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 15_000)
@@ -294,13 +289,12 @@ function Clock({ words, quiet }: { words: Words; quiet: boolean }) {
   const time = DHAKA.format(now)
   return (
     <p
-      className="pointer-events-auto whitespace-nowrap text-body transition-colors duration-500"
-      data-quiet={quiet ? '' : undefined}
+      className="pointer-events-auto whitespace-nowrap text-body"
       style={{ fontSize: w(words.size), lineHeight: w(words.leading) }}
     >
       It’s{' '}
       {/* A new minute rolls up into place. */}
-      <time key={time} className="inline-block text-ink transition-colors duration-500 motion-safe:animate-roll">
+      <time key={time} className="inline-block text-ink motion-safe:animate-roll">
         {time}
       </time>{' '}
       in Dhaka.

@@ -164,33 +164,6 @@
   }
 }
 
-/* Words set in the world step back to grey while the visitor is off in the
-   folders; pointing at them brings their colours back. A tap leaves :hover
-   and :focus stuck on what it touched, so on a touchscreen only the keyboard does. */
-@layer utilities {
-  @media (hover: hover) {
-    [data-quiet]:not(:hover, :focus-within),
-    [data-quiet]:not(:hover, :focus-within) * {
-      color: var(--color-faint);
-    }
-
-    [data-quiet]:not(:hover, :focus-within) .dither-fill {
-      opacity: 0;
-    }
-  }
-
-  @media (hover: none) {
-    [data-quiet]:not(:has(:focus-visible)),
-    [data-quiet]:not(:has(:focus-visible)) * {
-      color: var(--color-faint);
-    }
-
-    [data-quiet]:not(:has(:focus-visible)) .dither-fill {
-      opacity: 0;
-    }
-  }
-}
-
 /* A one-pixel line drawn under words from their start, carrying on across a
    line break, instead of an underline that blinks on. `line-drawn` (or a
    group that turns it on) draws it; taking it away rubs it back out. */
@@ -209,9 +182,7 @@
 }
 
 /* Words filled with a dither instead of a flat colour: the image in --dither,
-   sized by --dither-size and placed by --dither-at, shows through the letters.
-   It fades out wherever words go quiet, so lay it over a plain copy of the
-   words, which takes the quiet grey like any other. */
+   sized by --dither-size and placed by --dither-at, shows through the letters. */
 @utility dither-fill {
   color: transparent;
   -webkit-background-clip: text;
@@ -220,7 +191,6 @@
   background-size: var(--dither-size);
   background-position: var(--dither-at);
   background-repeat: repeat-x;
-  transition: opacity 500ms ease-out;
 }
 
 /* A line two cells of --dot tall under words, its cells lit in a checker, in
