@@ -15,17 +15,25 @@ Attar is one repo with everything a small shop needs:
 - **Demo sandbox** A private copy of the whole store for every visitor. ![Starting a demo store](/work/attar/case-study/demo-start.png)
 - **Phone shop** A tab bar, sheets and swipeable photos on phones. ![The shop on a phone](/work/attar/case-study/mobile-home.png)
 
+## Background.
+
+First, I love fragrances. Second, most of the smaller perfume shops in Bangladesh sell over Facebook. Only the well-established ones have a website.
+
+Buying from the rest goes like this. A shop posts a new arrival, people comment asking the price, and the shop replies with some version of "inbox us." So you inbox them, and they get back to you hours later. I don't like that friction, and I hate flooding my DMs asking shops for prices. I'd much rather see a new arrival, open the shop's website, see the price and decide.
+
+Attar is my practice project for that: a shop template made for small businesses like these.
+
 ## Problem.
 
 Shop templates expect a customer with an account, a card and a payment gateway. Plenty of shops here have a customer with a phone number and cash on delivery. I kept three threads in mind.
 
 > **Every order gets a call:** An order comes in, someone calls the customer to confirm it, and only then does the parcel go out. Every single one.
 > **No cards, no gateway:** Customers pay cash on delivery, or send the money by bKash, a mobile wallet, and type in the transaction ID.
-> **Agents will change it:** A lot of shop owners would customise it with an AI agent, so the code had to be easy for one to change.
+> **Agents will change it:** A shop owner should be able to point an AI agent at it and have it set the shop up for them, so the code had to be easy for one to change.
 
 ## Solution.
 
-So I built a template a small perfume or attar seller could fork, rebrand from one file and deploy for nothing.
+So I built a template a small perfume or attar seller could fork, rebrand from one file and deploy for nothing. It's barebones on purpose, so each shop can make it its own brand.
 
 ## Storefront.
 
@@ -58,7 +66,7 @@ Attar is MIT-licensed on [GitHub](https://github.com/nadidazwad/nextjs-perfume-s
 
 Shop owners who'd rather not touch code can ask me to set it up for them, with their brand, products, delivery charges, bKash and Nagad numbers and their own domain. They can try the store's admin first in the [demo](https://nextjs-perfume-store.vercel.app/demo), and there's no payment until we've talked.
 
-{How many shops have asked so far, and what came of it.}
+Unfortunately, I'm an introvert, so I never actually reached out to any shops about it. Attar is just sitting there, waiting to be discovered. If you run one, consider this me reaching out.
 
 ##
 
