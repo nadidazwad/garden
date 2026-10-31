@@ -13,6 +13,7 @@ As the founding design engineer I made these for the beta:
 - **Workspace** Every page a shop's team works in, rebuilt on the brand. ![The orders page](/work/stableconverse/workspace/orders.png)
 - **Inbox** Three columns, with take over and hand back. ![The inbox](/work/stableconverse/workspace/inbox.png)
 - **Landing page** The hero, a customer's view in Messenger, and pricing. ![The landing page](/work/stableconverse/landing.mp4)
+- **Invite page** A ticket for shops with a code, and a link preview to match. ![The invite page as a ticket](/work/stableconverse/case-study/invite.png)
 - **Olive and dark mode** The move off acid lime, and a second theme. ![The dashboard in dark mode](/work/stableconverse/case-study/dark.png)
 - **AI replies** Handoff to the team, safer orders and a rewritten prompt. ![The AI confirming an order on WhatsApp](/work/stableconverse/case-study/ai-replies.png)
 - **Test the AI** Test chats, suggested messages and an inspector. ![Test the AI, with messages to try](/work/stableconverse/case-study/test-the-ai.png)
@@ -68,6 +69,16 @@ I explored a set of new heroes. The team picked one and I liked another. The one
 
 Further down, a customer's view of Messenger shows a made-up Dhaka shop, Dhaka Threads, replying straight away, while the grid behind it lights up along a path like the snake in Snake. The page has no logos, quotes or numbers we can't back. Plans open by invitation, so every button says "I'm interested."
 
+In the landing rework I overlooked two things and forgot to redesign them: the invite page, where a shop types the code we sent, and the link preview people see when someone shares our link. Both still looked like the old brand. The invite page had two-pixel black borders, a bordered table of facts and mono uppercase labels, and the link preview was a dark card that said "AI that replies like you do."
+
+I've redesigned both now, but they're sitting in a pull request, so neither is live yet. The invite page is one ticket. You type the code straight onto it, and when it's right, the olive stub tears off along the perforation and the page moves on to sign-up. The link preview is white, with the hero's swirl carrying the WhatsApp, Messenger and Instagram logos, and a line for the shop owner who's still awake: "Price koto?" at 1 AM again? Go to sleep. We'll take this one.
+
+:::compare
+Invite: ![Before](/work/stableconverse/case-study/invite-before.png) ![After](/work/stableconverse/case-study/invite.png)
+Link preview: ![Before](/work/stableconverse/case-study/link-preview-before.png) ![After](/work/stableconverse/case-study/link-preview.png)
+In Discord: ![Before](/work/stableconverse/case-study/discord-before.png) ![After](/work/stableconverse/case-study/discord.png)
+:::
+
 ## AI replies.
 
 Then I moved from the screens to the prompts. That pull request is still in review.
@@ -80,12 +91,12 @@ Then I moved from the screens to the prompts. That pull request is still in revi
 
 ## Team.
 
-StableConverse is Sef, Rafid, Adiyan and me. Sef built the backend and the AI core all of this runs on. {Rafid's and Adiyan's parts, in the words they'd use.}
+StableConverse is Sef, Rafid, Adiyan and me. All the design here is mine, and I did it alone. Sef built the backend and the AI core all of this runs on. {Rafid's and Adiyan's parts, in the words they'd use.}
 
 ##
 
 **From redesign to replies, in numbers.** An earlier build of the AI replies passed 49 of the 51 cases in our beta test set. The final one hasn't had a full run yet.
 
-| 92 | Commits. | Mine, from the redesign to the AI replies. |
+| 99 | Commits. | Mine, from the redesign to the invite page. |
 | 60 | Mono labels. | About that many, taken off plain form fields. |
 | 49/51 | Test cases. | Passed by an earlier build in the beta set. |

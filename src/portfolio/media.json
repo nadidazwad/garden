@@ -48,5 +48,11 @@
   "work/quickhajj/case-study/enquiry": [2880, 1800],
   "work/stableconverse/case-study/dark": [2880, 1800],
   "work/stableconverse/case-study/ai-replies": [2880, 1800],
-  "work/stableconverse/case-study/test-the-ai": [2880, 1800]
+  "work/stableconverse/case-study/test-the-ai": [2880, 1800],
+  "work/stableconverse/case-study/invite": [2880, 1800],
+  "work/stableconverse/case-study/invite-before": [2880, 1800],
+  "work/stableconverse/case-study/link-preview": [2400, 1260],
+  "work/stableconverse/case-study/link-preview-before": [2400, 1260],
+  "work/stableconverse/case-study/discord": [1368, 928],
+  "work/stableconverse/case-study/discord-before": [1368, 928]
 }
