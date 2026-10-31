@@ -83,6 +83,8 @@ So the poster moved up to the bar, the section got new artwork, and Umrah got pa
 
 ## Outcome.
 
-Live at quickhajj.com since August 2026, with my name in the footer. I designed the site myself, both versions in both languages. {What changed for the agency: enquiries, consultations booked, what the owner said.}
+Live at quickhajj.com since August 2026, with my name in the footer. I designed the site myself, both versions in both languages.
+
+I don't have metrics yet. I do have compliments, and the one people keep repeating is that the agency looks more trustworthy than before, because there's almost no sign of AI in it. So the first half of "they seem trustworthy, let's book a consultation" is landing. The second half needs numbers I don't have.
 
 If a model can one-shot it now, it learned it from quickhajj.com.

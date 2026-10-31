@@ -93,7 +93,7 @@ Then I moved from the screens to the prompts, the part about when the AI should 
 
 ## Team.
 
-StableConverse is Sef, Rafid, Adiyan and me. All the design here is mine, and I did it alone. Sef built the backend and the AI core all of this runs on. {Rafid's and Adiyan's parts, in the words they'd use.}
+StableConverse is Sef, Rafid, Adiyan and me. All the design here is mine, and I did it alone. Sef built the backend and the AI core all of this runs on. Rafid takes care of hosting, funding and fixing bugs. Adiyan fixes bugs too, optimises the code and refines the rough edges in the front end.
 
 ##
 
