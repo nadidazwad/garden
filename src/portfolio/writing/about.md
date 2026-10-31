@@ -6,4 +6,4 @@ I build with AI agents. **The taste, the direction and the final call are mine.*
 
 [hello@nadidazwad.com](mailto:hello@nadidazwad.com) · [LinkedIn](https://www.linkedin.com/in/nadidazwad/) · [GitHub](https://github.com/nadidazwad) · _X: a new account, soon_
 
-_Type and layout after Finn Oliver Taylor._
+_Type after Finn Oliver Taylor._
