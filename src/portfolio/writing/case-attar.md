@@ -17,10 +17,10 @@ Attar is one repo with everything a small shop needs:
 
 ## Problem.
 
-Plenty of shops here sell in a way shop templates don't expect. I kept three threads in mind.
+Shop templates expect a customer with an account, a card and a payment gateway. Plenty of shops here have a customer with a phone number and cash on delivery. I kept three threads in mind.
 
-> **Every order gets a call:** An order comes in, someone calls the customer to confirm it, and only then does the parcel go out.
-> **No cards, no gateway:** Customers pay cash on delivery, or send the money by bKash and type in the transaction ID. Templates usually assume customer accounts, card checkout and a payment gateway.
+> **Every order gets a call:** An order comes in, someone calls the customer to confirm it, and only then does the parcel go out. Every single one.
+> **No cards, no gateway:** Customers pay cash on delivery, or send the money by bKash, a mobile wallet, and type in the transaction ID.
 > **Agents will change it:** A lot of shop owners would customise it with an AI agent, so the code had to be easy for one to change.
 
 ## Solution.
@@ -29,13 +29,13 @@ So I built a template a small perfume or attar seller could fork, rebrand from o
 
 ## Storefront.
 
-The browsing borrows from Jomashop's deal-driven shop: brand-first navigation, strikethrough prices, deal badges, and filters made for perfume, like notes, concentration, size, and tester or gift set. Checkout asks for a name, a phone number and an address. There are no customer accounts. You track an order with its number and your phone.
+Yes, the browsing is lifted from Jomashop's deal-driven shop: brand-first navigation, strikethrough prices and deal badges. The filters are made for perfume: notes, concentration, size, and tester or gift set. Checkout asks for a name, a phone number and an address, and that's it. No customer accounts, no passwords. You track an order with its number and your phone.
 
 It's built from 360 pixels up and scores 95 on Lighthouse mobile for the home, listing and product pages. On a phone it behaves like an app. A tab bar floats at the bottom, the bag and filters open as sheets you can flick away, and a product's photo grows into its gallery when you tap it.
 
 ## Admin.
 
-I designed the admin first, and its look became the system the storefront follows.
+I designed the admin first, which is backwards, and its look became the system the storefront follows.
 
 It's built around the confirmation call. Orders waiting for a call come first. Each order has a status timeline, a call log, notes, payment checks and courier details. A switch blocks customers who place fake orders, and new orders ping the team on Telegram or by email.
 
@@ -48,11 +48,11 @@ It's built around the confirmation call. Orders waiting for a call come first. E
 
 I wanted people to use the real admin, not watch a video of it. I also didn't want strangers editing the shop everyone else sees.
 
-So "Try the admin" gives each visitor a private copy of the whole store for two hours. Under the hood each copy is a Postgres schema of its own, made in about 350 ms. The demo login works on your phone too, and your edits, orders and uploads only ever show up for you. Up to 50 copies run at once, the 51st replaces the oldest, and expired copies are deleted on their own.
+So "Try the admin" gives each visitor a private copy of the whole store for two hours. Under the hood each copy is a Postgres schema of its own, made in about 350 ms. The demo login works on your phone too, and your edits, orders and uploads only ever show up for you. Up to 50 copies run at once, the 51st replaces the oldest (sorry, oldest visitor), and expired copies are deleted on their own.
 
 ## Code.
 
-Attar is MIT-licensed on [GitHub](https://github.com/nadidazwad/nextjs-perfume-store), with CI, guides for Vercel with Neon and for Docker, and three releases so far. Everything shop-specific lives in one typed file, store.config.ts. A wrong value there stops the build and names the field and the reason. AGENTS.md gives coding agents the map and a recipe for each common change, like adding a filter or a homepage section.
+Attar is MIT-licensed on [GitHub](https://github.com/nadidazwad/nextjs-perfume-store), with CI, guides for Vercel with Neon and for Docker, and three releases so far. Everything shop-specific lives in one typed file, store.config.ts. Get a value wrong and the build stops, names the field and tells you why. AGENTS.md gives coding agents the map and a recipe for each common change, like adding a filter or a homepage section, so a shop owner's agent doesn't have to guess.
 
 ## Setup.
 

@@ -22,19 +22,19 @@ As the founding design engineer I made these for the beta:
 
 A shop connects its pages and its catalogue, and the AI answers customers and takes orders. The workspace is for the shop's people. They teach the AI, log orders, and step in when it gets something wrong.
 
-When I started, the backend and the AI already worked. The screens around them didn't feel like somewhere you'd want to work all day.
+When I started, the backend and the AI already worked. The screens around them didn't feel like somewhere you'd want to spend a whole day, and a whole day is exactly what a shop's team spends in them.
 
 ## Problem.
 
 The first workspace had misread the brand. To fix it I kept three threads in mind.
 
 > **Brutalist by accident:** The landing page used square corners, so everything inside went brutalist. Two-pixel black borders on every button, card and input, hard offset shadows, buttons that sank into their shadow when pressed, and about sixty mono uppercase labels, most of them on ordinary form fields.
-> **A lime nobody could look at:** The team found the acid lime tiring to look at and handed the recolour to me. Every other shade had been tuned to sit next to the lime, so none of them could stay.
+> **A lime nobody could look at:** The team found the acid lime tiring to look at and handed the recolour to me. Every other shade had been tuned to sit next to the lime, so none of them could stay. Recolouring one thing meant recolouring everything.
 > **Somewhere to work all day:** The people in it are a shop's team, watching the AI and stepping in when it slips. It had to be a tool they could sit in for hours, on a laptop or a phone.
 
 ## Solution.
 
-I rebuilt every page on the brand's real system. A white page, Geist with tight tracking, thin lines, sharp rectangles for structure, pills and circles for anything you press, and one accent, now olive. Dark mode came with it, and light stays the default.
+I rebuilt every page on the brand's real system. A white page, Geist with tight tracking, thin lines, sharp rectangles for structure, pills and circles for anything you press, and one accent, now olive. Yes, Geist, the font every anti-slop list bans. It came with the brand. Dark mode came with the rebuild, and light stays the default.
 
 :::compare
 Dashboard: ![Before](/work/stableconverse/case-study/before-dashboard.png) ![After](/work/stableconverse/case-study/after-dashboard.png)
@@ -44,11 +44,13 @@ Catalogue: ![Before](/work/stableconverse/case-study/before-catalog.png) ![After
 
 ## Inbox.
 
-The old inbox was a list of threads beside a chat. I rebuilt it closer to Discord's DMs, in three columns: conversations with views and filters, the thread, and the customer on the right. In that panel the AI's summary comes first, then what it didn't know, then who the customer is.
+The old inbox was a list of threads beside a chat. I rebuilt it out of apps people already know how to use. The conversations and the thread follow the standard Messenger, WhatsApp and Instagram patterns, and the customer panel on the right and the team channels come from Discord.
+
+So it's three columns: conversations with views and filters, the thread, and the customer. In that panel the AI's summary comes first, then what it didn't know, then who the customer is.
 
 Each thread has a status and a priority, buttons to take over from the AI and hand back to it, private notes for the team, voice notes and photos. Team channels live in the inbox too.
 
-Most of this needed backend the product didn't have yet. I built the front end against a typed contract and a mock, so the team could use it and judge it straight away, and wrote down what the backend has to do to make each piece real.
+Most of this needed backend the product didn't have yet. So I faked it, properly. The front end runs against a typed contract and a mock, so the team could use it and judge it straight away, and I wrote down what the backend has to do to make each piece real.
 
 ## Unasked.
 
@@ -61,17 +63,17 @@ After that I made a pass nobody had asked for, as commits the seniors could drop
 
 ## Landing.
 
-Testers told us the animated background on the old hero was too fast and made them feel sick. Someone also pointed out that a field of dots can set off tripophobia. Taking the animation out left the hero with no personality, and slowing it down turned it into something else.
+Testers told us the animated background on the old hero was too fast and made them feel sick. Someone also pointed out that a field of dots can set off tripophobia, which is not something you want said about your hero. Taking the animation out left the hero with no personality, and slowing it down turned it into something else.
 
-I explored a set of new heroes. The team picked one and I liked another. The one that shipped came after both: the word stableconverse with a line swirling through it, and the inbox on a MacBook, sitting on an olive grid with rounded top corners.
+I explored a set of new heroes. The team picked one. I liked another. The one that shipped was neither: the word stableconverse with a line swirling through it, and the inbox on a MacBook, sitting on an olive grid with rounded top corners.
 
 ![The StableConverse landing page](/work/stableconverse/landing.mp4)
 
 Further down, a customer's view of Messenger shows a made-up Dhaka shop, Dhaka Threads, replying straight away, while the grid behind it lights up along a path like the snake in Snake. The page has no logos, quotes or numbers we can't back. Plans open by invitation, so every button says "I'm interested."
 
-In the landing rework I overlooked two things and forgot to redesign them: the invite page, where a shop types the code we sent, and the link preview people see when someone shares our link. Both still looked like the old brand. The invite page had two-pixel black borders, a bordered table of facts and mono uppercase labels, and the link preview was a dark card that said "AI that replies like you do."
+Then I shipped the new landing and forgot that two more pages existed. The invite page, where a shop types the code we sent, and the link preview, the card people see whenever someone shares our link. Both were still dressed in the old brand: two-pixel black borders, a bordered table of facts, mono uppercase labels, and a dark card that said "AI that replies like you do." Brutalist by accident, part two.
 
-I've redesigned both now, but they're sitting in a pull request, so neither is live yet. The invite page is one ticket. You type the code straight onto it, and when it's right, the olive stub tears off along the perforation and the page moves on to sign-up. The link preview is white, with the hero's swirl carrying the WhatsApp, Messenger and Instagram logos, and a line for the shop owner who's still awake: "Price koto?" at 1 AM again? Go to sleep. We'll take this one.
+I've redesigned both now, but they're sitting in a pull request, so neither is live yet. The invite page is one ticket. You type the code straight onto it, and when it's right, the olive stub tears off along the perforation and the page moves on to sign-up. The link preview is white, with the hero's swirl carrying the WhatsApp, Messenger and Instagram logos, and a line for the shop owner who's still awake: "Price koto?" (Banglish for "how much?") at 1 AM again? Go to sleep. We'll take this one.
 
 :::compare
 Invite: ![Before](/work/stableconverse/case-study/invite-before.png) ![After](/work/stableconverse/case-study/invite.png)
@@ -81,10 +83,10 @@ In Discord: ![Before](/work/stableconverse/case-study/discord-before.png) ![Afte
 
 ## AI replies.
 
-Then I moved from the screens to the prompts. That pull request is still in review.
+Then I moved from the screens to the prompts, the part about when the AI should stop talking. That pull request is still in review.
 
 - The AI can hand a chat to the team. That opens a "Handed over by AI" escalation and stops it in that chat. A team member replying takes the chat over too.
-- If the model fails, the customer gets nothing and the chat escalates. Before, they got raw text from the knowledge search.
+- If the model fails, the customer gets nothing and the chat escalates. Before, they got raw text from the knowledge search, which is a great way to tell a customer your AI just fell over.
 - Stock is checked before an order goes through, archived products can't be sold, and an order is only ever shown to the customer who placed it.
 - The prompt is rewritten around which facts to trust first, and it replies in Bangladeshi Bangla and Banglish.
 - Test the AI keeps its test chats, suggests messages to try, and has an inspector that shows what the AI saw.
